@@ -3,9 +3,11 @@ package services
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"log"
 	"os"
 	"time"
+	"unify-backend/internal/core/port"
 	"unify-backend/internal/worker"
 	"unify-backend/internal/ws"
 )
@@ -45,6 +47,22 @@ func Project1Worker(manager *worker.Manager) (*worker.Worker, error) {
 		func() {
 			log.Println("project1 task running")
 			i := 1
+
+			//PING
+			// res := ping.Ping(ping.Params{
+			// 	Target: "1.1.1.1",
+			// 	Times:  1,
+			// })
+
+			// fmt.Printf("%+v\n", res)
+
+			res := port.Check(port.Params{
+				Target:   "0.0.0.0",
+				Port:     3000,
+				Protocol: port.TCP,
+			})
+
+			fmt.Printf("%+v\n", res)
 
 			msg := ws.Message{
 				Time: time.Now(),
