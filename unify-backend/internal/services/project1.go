@@ -7,7 +7,8 @@ import (
 	"log"
 	"os"
 	"time"
-	"unify-backend/internal/core/port"
+	"unify-backend/internal/core/arp"
+	// "unify-backend/internal/core/port"
 	"unify-backend/internal/worker"
 	"unify-backend/internal/ws"
 )
@@ -56,12 +57,18 @@ func Project1Worker(manager *worker.Manager) (*worker.Worker, error) {
 
 			// fmt.Printf("%+v\n", res)
 
-			res := port.Check(port.Params{
-				Target:   "0.0.0.0",
-				Port:     3000,
-				Protocol: port.TCP,
-			})
+			// res := port.Check(port.Params{
+			// 	Target:   "0.0.0.0",
+			// 	Port:     3000,
+			// 	Protocol: port.TCP,
+			// })
 
+			
+			res := arp.Check(arp.Params{
+				IP:        "172.20.0.1",
+				// Interface: "eth0",
+				// Warmup:    true,
+			})
 			fmt.Printf("%+v\n", res)
 
 			msg := ws.Message{
