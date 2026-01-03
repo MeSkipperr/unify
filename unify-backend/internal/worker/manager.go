@@ -1,12 +1,16 @@
 package worker
 
-import "sync"
-import "errors"
+import (
+	"errors"
+	"sync"
+	"unify-backend/internal/ws"
+)
 
 type Manager struct {
 	mu      sync.RWMutex
 	workers map[string]*Worker
 	status  map[string]Status
+	projectHub   *ws.Hub
 }
 
 func NewManager() *Manager {
@@ -81,4 +85,17 @@ func (m *Manager) Restart(name string) error {
 	m.mu.Unlock()
 
 	return nil
+}
+
+
+func (m *Manager) BroadcastProject(msg ws.Message) {
+	if m.projectHub == nil {
+		return
+	}
+	m.projectHub.Broadcast(msg)
+}
+
+
+func (m *Manager) SetProjectHub(h *ws.Hub) {
+	m.projectHub = h
 }

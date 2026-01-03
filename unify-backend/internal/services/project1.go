@@ -5,14 +5,15 @@ import (
 	"errors"
 	"log"
 	"os"
+	"time"
 	"unify-backend/internal/worker"
+	"unify-backend/internal/ws"
 )
 
 type ProjectCronConfig struct {
 	Service string `json:"service"`
 	Cron    string `json:"cron"`
 }
-
 
 func loadProject1Cron() (string, error) {
 	data, err := os.ReadFile("project1.json")
@@ -32,8 +33,7 @@ func loadProject1Cron() (string, error) {
 	return cfg.Cron, nil
 }
 
-
-func Project1Worker() (*worker.Worker, error) {
+func Project1Worker(manager *worker.Manager) (*worker.Worker, error) {
 	cron, err := loadProject1Cron()
 	if err != nil {
 		return nil, err
@@ -44,6 +44,20 @@ func Project1Worker() (*worker.Worker, error) {
 		cron,
 		func() {
 			log.Println("project1 task running")
+			i := 1
+
+			msg := ws.Message{
+				Time: time.Now(),
+				ID:   i,
+				Message: map[string]interface{}{
+					"status": "running",
+					"cpu":    42,
+				},
+			}
+
+			i++
+
+			manager.BroadcastProject(msg)
 		},
 	), nil
 }

@@ -8,10 +8,12 @@ import (
 
 	"unify-backend/internal/services"
 	"unify-backend/internal/worker"
+	"unify-backend/internal/ws"
 )
 
 type Handler struct {
 	manager *worker.Manager
+	wsHub   *ws.Hub
 }
 
 type StatusPayload struct {
@@ -25,11 +27,22 @@ type StatusResponse struct {
 }
 
 func NewHandler(m *worker.Manager) http.Handler {
-	h := &Handler{manager: m}
+	h := &Handler{
+		manager: m,
+		wsHub:   ws.NewHub(),
+	}
+
 	mux := http.NewServeMux()
+
+	// existing http
 	mux.HandleFunc("/services/", h.router)
+
+	// NEW: websocket
+	mux.Handle("/ws/services", ws.ServeWS(h.wsHub))
+
 	return mux
 }
+
 
 func (h *Handler) router(w http.ResponseWriter, r *http.Request) {
 	if strings.HasSuffix(r.URL.Path, "/status") {
@@ -104,7 +117,7 @@ func (h *Handler) status(w http.ResponseWriter, r *http.Request) {
 }
 
 func RestartProject1(manager *worker.Manager) error {
-	w, err := services.Project1Worker() // baca config terbaru
+	w, err := services.Project1Worker(manager)
 	if err != nil {
 		return err
 	}
