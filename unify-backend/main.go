@@ -16,7 +16,7 @@ func main() {
 	projectHub := ws.NewHub()
 	manager.SetProjectHub(projectHub)
 
-	w, err := services.Project1Worker(manager)
+	w, err := services.MonitoringNetwork(manager)
 	if err != nil {
 		log.Fatal(err)
 	}
