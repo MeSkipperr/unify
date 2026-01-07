@@ -1,27 +1,32 @@
 package models
 
-import "time"
+import (
+	"github.com/google/uuid"
+
+	"time"
+)
 
 type DeviceType string
 
 const (
-	CCTV DeviceType = "cctv"
-	IPTV DeviceType = "iptv"
-	AP   DeviceType = "access_point"
+	CCTV   DeviceType = "cctv"
+	IPTV   DeviceType = "iptv"
+	AP     DeviceType = "access_point"
+	SWIPTV DeviceType = "sw_iptv"
 )
 
-type DeviceStruct struct {
-	DeviceID     string     `json:"device_id"`
-	IPAddress    string     `json:"ip_address"`
-	IsConnect    bool       `json:"is_connect"`
-	ErrorCount   int        `json:"error_count"`
-	Name         string     `json:"name"`
-	RoomNumber   string     `json:"room_number"`
-	Description  string     `json:"description"`
-	Type         DeviceType `json:"type"`
-	Notification bool       `json:"notification"`
-	LastChange   time.Time  `json:"last_change"`
-	MacAddress   string     `json:"mac_address"`
+type Devices struct {
+	ID           uuid.UUID  `gorm:"type:uuid;default:gen_random_uuid();primaryKey"`
+	IPAddress    string     `gorm:"size:45;not null"`
+	IsConnect    bool       `gorm:"default:false"`
+	ErrorCount   int        `gorm:"default:0"`
+	Name         string     `gorm:"size:100;uniqueIndex;not null"`
+	RoomNumber   string     `gorm:"size:50"`
+	Description  string     `gorm:"type:text"`
+	Type         DeviceType `gorm:"type:varchar(30);not null"`
+	Notification bool       `gorm:"default:false"`
+	MacAddress   string     `gorm:"size:50"`
+	status_updated_at time.Time
 }
 
 var devicePorts = map[DeviceType][]int{

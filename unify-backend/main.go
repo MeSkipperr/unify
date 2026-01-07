@@ -10,7 +10,7 @@
 // 	"unify-backend/internal/ws"
 // )
 
-// func main() {	
+// func main() {
 // 	manager := worker.NewManager()
 
 // 	projectHub := ws.NewHub()
@@ -40,19 +40,42 @@
 package main
 
 import (
-	"database/sql"
 	"fmt"
 	"log"
 	"net/http"
-	"os"
+	"unify-backend/internal/database"
+	"unify-backend/internal/repository"
+	"unify-backend/internal/services"
+	"unify-backend/models"
 
 	_ "github.com/lib/pq"
 )
 
 func main() {
-	db := connectDB()
-	defer db.Close()
+	database.Connect()
+	database.DB.AutoMigrate(
+		&models.Service{}, // WAJIB PERTAMA
+		&models.Log{},     // BARU LOG
+		// &models.Devices{},     // BARU LOG
+	)
+	seedData()
 
+	logRepo := repository.NewLogRepository(database.DB)
+
+	logService := services.NewLogService(logRepo)
+
+	err := logService.CreateLog(services.CreateLogParams{
+		Level:       "INFO",
+		ServiceName: "DeviceMonitor",
+		Message:     "Service started successfully",
+	})
+	selectAllDevices()
+
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	log.Println("Log created successfully")
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprintln(w, "Backend Go running on :8080")
 	})
@@ -61,25 +84,35 @@ func main() {
 	log.Fatal(http.ListenAndServe(":8080", nil))
 }
 
-func connectDB() *sql.DB {
-	dsn := fmt.Sprintf(
-		"host=%s port=%s user=%s password=%s dbname=%s sslmode=disable",
-		os.Getenv("POSTGRES_HOST"),
-		os.Getenv("POSTGRES_PORT"),
-		os.Getenv("POSTGRES_USER"),
-		os.Getenv("POSTGRES_PASSWORD"),
-		os.Getenv("POSTGRES_DB"),
-	)
-
-	db, err := sql.Open("postgres", dsn)
-	if err != nil {
-		log.Fatal(err)
+func seedData() {
+	device := models.Devices{
+		Name: "cctv-04",
+		IPAddress: "192.168.1.12",
+		Type:      "cctv",
+		// Status:    "active",
 	}
 
-	if err := db.Ping(); err != nil {
-		log.Fatal("DB connection failed:", err)
+	database.DB.FirstOrCreate(&device, models.Devices{Name: "cctv-04"})
+	fmt.Println("✅ Seed data ready")
+}
+
+func selectAllDevices() {
+	var devices []models.Devices
+
+	result := database.DB.Find(&devices)
+	if result.Error != nil {
+		log.Fatal(result.Error)
 	}
 
-	log.Println("PostgreSQL connected")
-	return db
+	fmt.Println("📦 Devices:")
+	for _, d := range devices {
+		fmt.Printf(
+			"- ID=%d | DeviceID=%s | IP=%s | Type=%s 	\n",
+			d.ID,
+			d.Name,
+			d.IPAddress,
+			d.Type,
+			// d.Status,
+		)
+	}
 }

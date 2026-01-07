@@ -1,4 +1,4 @@
-package services
+package cmd
 
 import (
 	"fmt"
@@ -19,7 +19,7 @@ type ConnectivityResult struct {
 	ConnectPort int    `json:"connect_port"`
 }
 
-func CheckDeviceConnectivity(dev models.DeviceStruct) ConnectivityResult {
+func CheckDeviceConnectivity(dev models.Devices) ConnectivityResult {
 	result := ConnectivityResult{
 		MACAddress:  dev.MacAddress,
 		IsConnect:   false,
@@ -66,11 +66,11 @@ func CheckDeviceConnectivity(dev models.DeviceStruct) ConnectivityResult {
 	return result
 }
 
-func sendNotification(dev models.DeviceStruct, errorNotification bool) {
+func sendNotification(dev models.Devices, errorNotification bool) {
 
 }
 
-func ProcessConnection(dev models.DeviceStruct) {
+func ProcessConnection(dev models.Devices) {
 	times := 2
 
 	res := CheckDeviceConnectivity(dev)

@@ -6,7 +6,7 @@ import (
 	"strings"
 	"time"
 
-	"unify-backend/internal/services"
+	"unify-backend/cmd"
 	"unify-backend/internal/worker"
 	"unify-backend/internal/ws"
 )
@@ -117,7 +117,7 @@ func (h *Handler) status(w http.ResponseWriter, r *http.Request) {
 }
 
 func RestartMonitoringNetwork(manager *worker.Manager) error {
-	w, err := services.MonitoringNetwork(manager)
+	w, err := cmd.MonitoringNetwork(manager)
 	if err != nil {
 		return err
 	}
