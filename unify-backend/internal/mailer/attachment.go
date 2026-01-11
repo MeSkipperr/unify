@@ -9,7 +9,7 @@ import (
 	"path/filepath"
 )
 
-func addAttachment(writer *multipart.Writer, filePath string) error {
+func AddAttachment(writer *multipart.Writer, filePath string) error {
 	file, err := os.Open(filePath)
 	if err != nil {
 		return err
