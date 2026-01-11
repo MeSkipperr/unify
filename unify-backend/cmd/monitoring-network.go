@@ -1,16 +1,23 @@
 package cmd
 
 import (
+	"errors"
 	"fmt"
 	"log"
 	"time"
 	"unify-backend/internal/core/arp"
 	"unify-backend/internal/core/port"
+	"unify-backend/internal/database"
+	"unify-backend/internal/mailer"
+	"unify-backend/internal/notification"
+	"unify-backend/internal/services"
+	"unify-backend/internal/template/email"
 	"unify-backend/utils"
 
 	"unify-backend/internal/worker"
-	"unify-backend/internal/ws"
 	"unify-backend/models"
+
+	"github.com/google/uuid"
 )
 
 type ConnectivityResult struct {
@@ -19,7 +26,20 @@ type ConnectivityResult struct {
 	ConnectPort int    `json:"connect_port"`
 }
 
-func CheckDeviceConnectivity(dev models.Devices) ConnectivityResult {
+func selectDevices(types []models.DeviceType) ([]models.Devices, error) {
+	var devices []models.Devices
+
+	result := database.DB.
+		Where("type IN ?", types).
+		Find(&devices)
+	if result.Error != nil {
+		return nil, result.Error
+	}
+
+	return devices, nil
+}
+
+func checkDeviceConnectivity(dev models.Devices) ConnectivityResult {
 	result := ConnectivityResult{
 		MACAddress:  dev.MacAddress,
 		IsConnect:   false,
@@ -66,14 +86,49 @@ func CheckDeviceConnectivity(dev models.Devices) ConnectivityResult {
 	return result
 }
 
-func sendNotification(dev models.Devices, errorNotification bool) {
+func sendNotification(dev models.Devices, isConnect bool) {
+	subject := fmt.Sprintf("[ALERT] %s - DOWN", dev.Name)
+	if isConnect {
+		subject = fmt.Sprintf("[ALERT] %s - UP", dev.Name)
+	}
 
+	notification.UserNotificationChannel(mailer.EmailData{
+		Subject:        subject,
+		BodyTemplate:   email.DeviceStatusEmail(dev, isConnect),
+		FileAttachment: []string{},
+	})
 }
 
-func ProcessConnection(dev models.Devices) {
-	times := 2
+func updateDeviceStatus(
+	deviceID uuid.UUID,
+	isConnect bool,
+	errorCount int,
+) error {
 
-	res := CheckDeviceConnectivity(dev)
+	result := database.DB.
+		Model(&models.Devices{}).
+		Where("id = ?", deviceID).
+		Updates(map[string]interface{}{
+			"is_connect":         isConnect,
+			"error_count":        errorCount,
+			"status_updated_at":  time.Now(),
+		})
+
+	if result.Error != nil {
+		return result.Error
+	}
+
+	if result.RowsAffected == 0 {
+		return errors.New("device not found")
+	}
+
+	return nil
+}
+
+
+func processConnection(dev models.Devices, times int) {
+	isConnect := dev.IsConnect
+	res := checkDeviceConnectivity(dev)
 
 	if res.IsConnect {
 		dev.ErrorCount = utils.Clamp(dev.ErrorCount-1, 0, times)
@@ -84,58 +139,65 @@ func ProcessConnection(dev models.Devices) {
 	if dev.ErrorCount == 0 || dev.ErrorCount == times {
 		if dev.IsConnect && dev.ErrorCount == times {
 			//send error
-			sendNotification(dev, true)
+			isConnect = false
+			sendNotification(dev, false)
+			services.CreateAppLog(services.CreateLogParams{
+				Level:       "INFO",
+				ServiceName: "monitoring-network",
+				Message:     "Device down: " + dev.Name,
+			})
+
 		} else if !dev.IsConnect && dev.ErrorCount == 0 {
 			// send recovery
-			sendNotification(dev, false)
+			isConnect = true
+			sendNotification(dev, true)
+			services.CreateAppLog(services.CreateLogParams{
+				Level:       "INFO",
+				ServiceName: "monitoring-network",
+				Message:     "Device recovered: " + dev.Name,
+			})
 		}
 	}
-	//create log
 	//update db
+	err := updateDeviceStatus(dev.ID, isConnect, dev.ErrorCount)
+	if err != nil {
+		services.CreateAppLog(services.CreateLogParams{
+			Level:       "ERROR",
+			ServiceName: "monitoring-network",
+			Message:     "Failed to update device status: " + err.Error(),
+		})
+	}
 }
 
 func MonitoringNetwork(manager *worker.Manager) (*worker.Worker, error) {
+	err := services.CreateAppLog(services.CreateLogParams{
+		Level:       "INFO",
+		ServiceName: "monitoring-network",
+		Message:     "Monitoring Network Service Started",
+	})
+
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	return worker.NewWorker(
 		"monitoring-network",
 		"* * * * * *",
 		func() {
-			log.Println("project1 task running")
-			i := 1
-
-			//PING
-			// res := ping.Ping(ping.Params{
-			// 	Target: "1.1.1.1",
-			// 	Times:  1,
-			// })
-
-			// fmt.Printf("%+v\n", res)
-
-			// res := port.Check(port.Params{
-			// 	Target:   "0.0.0.0",
-			// 	Port:     3000,
-			// 	Protocol: port.TCP,
-			// })
-
-			res := arp.Check(arp.Params{
-				IP: "172.19.176.1",
-				// Interface: "eth0",
-				Warmup: true,
-			})
-			fmt.Printf("%+v\n", res)
-
-			msg := ws.Message{
-				Time: time.Now(),
-				ID:   i,
-				Message: map[string]interface{}{
-					"status": "running",
-					"cpu":    42,
-				},
+			types := []models.DeviceType{
+				models.CCTV,
+				models.IPTV,
 			}
 
-			i++
+			devices, err := selectDevices(types)
+			if err != nil {
+				log.Println("Error selecting devices:", err)
+				return
+			}
 
-			manager.BroadcastProject(msg)
+			for _, dev := range devices {
+				processConnection(dev, 2)
+			}
 		},
 	), nil
 }

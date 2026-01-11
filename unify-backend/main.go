@@ -44,36 +44,12 @@ import (
 	"log"
 	"net/http"
 	"unify-backend/internal/database"
-	"unify-backend/internal/repository"
-	"unify-backend/internal/services"
-	"unify-backend/models"
 
 	_ "github.com/lib/pq"
 )
 
 func main() {
 	database.Connect()
-	database.DB.AutoMigrate(
-		&models.Service{}, // WAJIB PERTAMA
-		&models.Log{},     // BARU LOG
-		// &models.Devices{},     // BARU LOG
-	)
-	seedData()
-
-	logRepo := repository.NewLogRepository(database.DB)
-
-	logService := services.NewLogService(logRepo)
-
-	err := logService.CreateLog(services.CreateLogParams{
-		Level:       "INFO",
-		ServiceName: "DeviceMonitor",
-		Message:     "Service started successfully",
-	})
-	selectAllDevices()
-
-	if err != nil {
-		log.Fatal(err)
-	}
 
 	log.Println("Log created successfully")
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
@@ -81,38 +57,7 @@ func main() {
 	})
 
 	log.Println("Backend running on :8080")
+
+
 	log.Fatal(http.ListenAndServe(":8080", nil))
-}
-
-func seedData() {
-	device := models.Devices{
-		Name: "cctv-04",
-		IPAddress: "192.168.1.12",
-		Type:      "cctv",
-		// Status:    "active",
-	}
-
-	database.DB.FirstOrCreate(&device, models.Devices{Name: "cctv-04"})
-	fmt.Println("✅ Seed data ready")
-}
-
-func selectAllDevices() {
-	var devices []models.Devices
-
-	result := database.DB.Find(&devices)
-	if result.Error != nil {
-		log.Fatal(result.Error)
-	}
-
-	fmt.Println("📦 Devices:")
-	for _, d := range devices {
-		fmt.Printf(
-			"- ID=%d | DeviceID=%s | IP=%s | Type=%s 	\n",
-			d.ID,
-			d.Name,
-			d.IPAddress,
-			d.Type,
-			// d.Status,
-		)
-	}
 }
