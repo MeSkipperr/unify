@@ -2,7 +2,9 @@ package services
 
 import (
 	"time"
+	"unify-backend/internal/database"
 	"unify-backend/internal/repository"
+	// "unify-backend/internal/services"
 	"unify-backend/models"
 )
 
@@ -56,4 +58,12 @@ func (s *LogService) CreateLog(params CreateLogParams) error {
 
 func (s *LogService) SearchLogs(params SearchLogParams) ([]models.Log, error) {
 	return s.repo.FindLogs(repository.SearchLogParams{})
+}
+
+
+func CreateAppLog(params CreateLogParams) error {
+	logRepo := repository.NewLogRepository(database.DB)
+	logService := NewLogService(logRepo)
+
+	return logService.CreateLog(params)
 }
