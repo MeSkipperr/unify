@@ -14,7 +14,7 @@ func UserNotificationChannel(data mailer.EmailData) (string, error) {
 	if err != nil {
 		services.CreateAppLog(services.CreateLogParams{
 			Level:       "ERROR",
-			ServiceName: "UserNotificationChannel",
+			ServiceName: "user-notification-channel",
 			Message:     "Failed to fetch users: " + err.Error(),
 		})
 		return "", err
@@ -49,7 +49,7 @@ func UserNotificationChannel(data mailer.EmailData) (string, error) {
 	if err != nil {
 		services.CreateAppLog(services.CreateLogParams{
 			Level:       "ERROR",
-			ServiceName: "UserNotificationChannel",
+			ServiceName: "user-notification-channel",
 			Message:     "Failed to send user notification email: " + err.Error(),
 		})
 		return "", err
