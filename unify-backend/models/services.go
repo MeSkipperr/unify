@@ -26,6 +26,5 @@ type Service struct {
 
 	UpdatedAt time.Time
 
-	// Relation
 	ServiceStatus ServiceStatus `gorm:"foreignKey:Status;references:Status"`
 }

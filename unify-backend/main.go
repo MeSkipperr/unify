@@ -40,10 +40,13 @@
 package main
 
 import (
-	"fmt"
 	"log"
 	"net/http"
+	"unify-backend/cmd"
 	"unify-backend/internal/database"
+	api "unify-backend/internal/http"
+	"unify-backend/internal/worker"
+	"unify-backend/internal/ws"
 
 	_ "github.com/lib/pq"
 )
@@ -51,13 +54,26 @@ import (
 func main() {
 	database.Connect()
 
-	log.Println("Log created successfully")
-	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		fmt.Fprintln(w, "Backend Go running on :8080")
-	})
+	manager := worker.NewManager()
 
-	log.Println("Backend running on :8080")
+	projectHub := ws.NewHub()
+	manager.SetProjectHub(projectHub)
 
+	w, err := cmd.MonitoringNetwork(manager)
+	if err != nil {
+		log.Fatal(err)
+	}
 
-	log.Fatal(http.ListenAndServe(":8080", nil))
+	manager.Register(w)
+
+	mux := http.NewServeMux()
+	apiHandler := api.NewHandler(manager)
+	mux.Handle("/", apiHandler)
+
+	mux.Handle("/ws/project", ws.ServeWS(projectHub))
+
+	log.Println("server running on :8080")
+	if err := http.ListenAndServe(":8080", mux); err != nil {
+		log.Fatal(err)
+	}
 }

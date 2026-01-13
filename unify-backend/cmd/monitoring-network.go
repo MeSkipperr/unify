@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"log"
@@ -26,7 +27,7 @@ type ConnectivityResult struct {
 	ConnectPort int    `json:"connect_port"`
 }
 
-func selectDevices(types []models.DeviceType) ([]models.Devices, error) {
+func selectDevicesByTypes(types []models.DeviceType) ([]models.Devices, error) {
 	var devices []models.Devices
 
 	result := database.DB.
@@ -109,9 +110,9 @@ func updateDeviceStatus(
 		Model(&models.Devices{}).
 		Where("id = ?", deviceID).
 		Updates(map[string]interface{}{
-			"is_connect":         isConnect,
-			"error_count":        errorCount,
-			"status_updated_at":  time.Now(),
+			"is_connect":        isConnect,
+			"error_count":       errorCount,
+			"status_updated_at": time.Now(),
 		})
 
 	if result.Error != nil {
@@ -125,79 +126,119 @@ func updateDeviceStatus(
 	return nil
 }
 
+func logInfo(msg string) {
+	services.CreateAppLog(services.CreateLogParams{
+		Level:       "INFO",
+		ServiceName: "monitoring-network",
+		Message:     msg,
+	})
+}
 
-func processConnection(dev models.Devices, times int) {
-	isConnect := dev.IsConnect
-	res := checkDeviceConnectivity(dev)
+func logError(msg string) {
+	services.CreateAppLog(services.CreateLogParams{
+		Level:       "ERROR",
+		ServiceName: "monitoring-network",
+		Message:     msg,
+	})
+}
 
-	if res.IsConnect {
-		dev.ErrorCount = utils.Clamp(dev.ErrorCount-1, 0, times)
+
+func processConnection(dev models.Devices, maxTimes int) {
+	prevErrorCount := dev.ErrorCount
+	prevIsConnect := dev.IsConnect
+
+	result := checkDeviceConnectivity(dev)
+
+	// update error count
+	if result.IsConnect {
+		dev.ErrorCount = utils.Clamp(dev.ErrorCount-1, 0, maxTimes)
 	} else {
-		dev.ErrorCount = utils.Clamp(dev.ErrorCount+1, 0, times)
+		dev.ErrorCount = utils.Clamp(dev.ErrorCount+1, 0, maxTimes)
 	}
 
-	if dev.ErrorCount == 0 || dev.ErrorCount == times {
-		if dev.IsConnect && dev.ErrorCount == times {
-			//send error
-			isConnect = false
-			sendNotification(dev, false)
-			services.CreateAppLog(services.CreateLogParams{
-				Level:       "INFO",
-				ServiceName: "monitoring-network",
-				Message:     "Device down: " + dev.Name,
-			})
+	// tentukan status baru
+	newIsConnect := prevIsConnect
 
-		} else if !dev.IsConnect && dev.ErrorCount == 0 {
-			// send recovery
-			isConnect = true
-			sendNotification(dev, true)
-			services.CreateAppLog(services.CreateLogParams{
-				Level:       "INFO",
-				ServiceName: "monitoring-network",
-				Message:     "Device recovered: " + dev.Name,
-			})
-		}
+	// DOWN (dari connect → disconnect)
+	if prevIsConnect && dev.ErrorCount == maxTimes {
+		newIsConnect = false
+		sendNotification(dev, false)
+		logInfo("Device down: " + dev.Name)
+	} else if !prevIsConnect && dev.ErrorCount == 0 {
+	 // RECOVER (dari disconnect → connect)
+		newIsConnect = true
+		sendNotification(dev, true)
+		logInfo("Device recovered: " + dev.Name)
 	}
-	//update db
-	err := updateDeviceStatus(dev.ID, isConnect, dev.ErrorCount)
-	if err != nil {
-		services.CreateAppLog(services.CreateLogParams{
-			Level:       "ERROR",
-			ServiceName: "monitoring-network",
-			Message:     "Failed to update device status: " + err.Error(),
-		})
+
+	// ⛔ tidak ada perubahan → stop
+	if prevErrorCount == dev.ErrorCount && prevIsConnect == newIsConnect {
+		return
+	}
+
+	// update DB
+	if err := updateDeviceStatus(dev.ID, newIsConnect, dev.ErrorCount); err != nil {
+		logError("Failed to update device status: " + err.Error())
 	}
 }
 
+type monitoringNetworkConfig struct {
+	Delay         int      `json:"delay"`
+	CheckingTimes int      `json:"checkingTimes"`
+	DeviceTypes   []string `json:"deviceType"`
+}
+
 func MonitoringNetwork(manager *worker.Manager) (*worker.Worker, error) {
-	err := services.CreateAppLog(services.CreateLogParams{
-		Level:       "INFO",
-		ServiceName: "monitoring-network",
-		Message:     "Monitoring Network Service Started",
-	})
+	const serviceName = "monitoring-network"
+
+	config := monitoringNetworkConfig{
+		Delay:         300, // default 5 minutes
+		CheckingTimes: 3,   // default 3 times
+	}
+
+	service, err := services.GetByServiceName(serviceName)
+	err = json.Unmarshal(service.Config, &config)
 
 	if err != nil {
 		log.Fatal(err)
+		return nil, err
 	}
 
-	return worker.NewWorker(
-		"monitoring-network",
-		"* * * * * *",
+	w := worker.NewWorker(
+		serviceName,
+		"",
 		func() {
-			types := []models.DeviceType{
-				models.CCTV,
-				models.IPTV,
-			}
-
-			devices, err := selectDevices(types)
+			err := services.CreateAppLog(services.CreateLogParams{
+				Level:       "INFO",
+				ServiceName: serviceName,
+				Message:     "Monitoring Network Service Started",
+			})
 			if err != nil {
-				log.Println("Error selecting devices:", err)
+				log.Fatal(err)
 				return
 			}
+			types := make([]models.DeviceType, 0, len(config.DeviceTypes))
 
-			for _, dev := range devices {
-				processConnection(dev, 2)
+			for _, t := range config.DeviceTypes {
+				types = append(types, models.DeviceType(t))
+			}
+
+			for {
+				devices, err := selectDevicesByTypes(types)
+				if err != nil {
+					log.Println("Error selecting devices:", err)
+					return
+				}
+
+				for _, dev := range devices {
+					processConnection(dev, config.CheckingTimes)
+				}
+
+				time.Sleep(time.Duration(config.Delay))
 			}
 		},
-	), nil
+	)
+
+	w.RunOnce = true
+	return w, nil
 }

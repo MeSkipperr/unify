@@ -1,9 +1,15 @@
 TO DO
 
+PATH
+/devices/device-id
+
+
+
 UNIFY-BACKEND 
 
 []MONITORING NETWORK 
+    /services/monitoring-network
     [X]NOTIFIKASI KONEKSI DEVICE UP/DOWN VIA EMAIL
     [X]UBAH DATA STATUS
-    [] MENAMDAPATKAN DATA
-    []TESTING 
+    [X] MENDAPATKAN DATA
+    [] TESTING 
