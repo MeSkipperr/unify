@@ -3,20 +3,20 @@ package worker
 import (
 	"fmt"
 	"sync"
+	"unify-backend/internal/services"
 
 	"github.com/robfig/cron/v3"
 )
 
 type Worker struct {
-	Name   string
-	Cron   string
-	Task   func()
-	status Status	
-	cron   *cron.Cron
-	mu     sync.Mutex
+	Name    string
+	Cron    string
+	Task    func()
+	status  Status
+	cron    *cron.Cron
+	mu      sync.Mutex
 	RunOnce bool
 }
-
 
 func NewWorker(name, cronExpr string, task func()) *Worker {
 	return &Worker{
@@ -35,6 +35,14 @@ func (w *Worker) Start() error {
 		return nil
 	}
 
+	err := services.CreateAppLog(services.CreateLogParams{
+		Level:       "INFO",
+		ServiceName: w.Name,
+		Message:     "Services started",
+	})
+	if err != nil {
+		return err
+	}
 
 	w.status = StatusStarted
 
@@ -55,7 +63,7 @@ func (w *Worker) Start() error {
 	}
 
 	c := cron.New(cron.WithSeconds())
-	_, err := c.AddFunc(w.Cron, w.Task)
+	_, err = c.AddFunc(w.Cron, w.Task)
 	if err != nil {
 		w.status = StatusStopped
 		return err
@@ -66,15 +74,21 @@ func (w *Worker) Start() error {
 	return nil
 }
 
-
-
-
 func (w *Worker) Stop() error {
 	w.mu.Lock()
 	defer w.mu.Unlock()
 
 	if w.status == StatusStopped {
 		return fmt.Errorf("worker %s already stopped", w.Name)
+	}
+
+	err := services.CreateAppLog(services.CreateLogParams{
+		Level:       "INFO",
+		ServiceName: w.Name,
+		Message:     "Services stopped",
+	})
+	if err != nil {
+		return err
 	}
 
 	if w.cron != nil {
@@ -85,7 +99,6 @@ func (w *Worker) Stop() error {
 	w.status = StatusStopped
 	return nil
 }
-
 
 func (w *Worker) Status() Status {
 	return w.status

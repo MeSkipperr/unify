@@ -208,15 +208,6 @@ func MonitoringNetwork(manager *worker.Manager) (*worker.Worker, error) {
 		serviceName,
 		"",
 		func() {
-			err := services.CreateAppLog(services.CreateLogParams{
-				Level:       "INFO",
-				ServiceName: serviceName,
-				Message:     "Monitoring Network Service Started",
-			})
-			if err != nil {
-				log.Fatal(err)
-				return
-			}
 			types := make([]models.DeviceType, 0, len(config.DeviceTypes))
 
 			for _, t := range config.DeviceTypes {
