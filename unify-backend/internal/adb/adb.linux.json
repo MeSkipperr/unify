@@ -1,0 +1,19 @@
+{
+    "adbPath": "adb",
+    "adbPort": 5555,
+    "package":{
+        "youtube":"com.google.android.youtube.tv"
+    },
+    "verificationSteps":2,
+    "adbCommandTemplate":{
+        "kill"              : "{adbPath} kill-server",
+        "start"             : "{adbPath} start-server",
+        "connect"           : "{adbPath} connect {ip}:{port}",
+        "disconnect"        : "{adbPath} disconnect {ip}:{port}",
+        "clearData"         : "{adbPath} -s {ip}:{port} shell pm clear {package}",
+        "getUptime"         : "{adbPath} -s {ip}:{port} shell cat /proc/uptime",
+        "getDeviceInfo"     : "{adbPath} -s {ip}:{port} shell getprop ro.product.model",
+        "getDeviceSerial"   : "{adbPath} -s {ip}:{port} shell getprop ro.serialno",
+        "getDeviceId"       : "{adbPath} -s {ip}:{port} shell settings get secure android_id"
+    }
+}
