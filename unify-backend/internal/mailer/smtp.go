@@ -33,6 +33,7 @@ func loadSenderFromEnv() (Sender, string, int, error) {
 func replaceTemplate(body string, firstName, lastName string) string {
 	body = strings.ReplaceAll(body, "{{firstName}}", firstName)
 	body = strings.ReplaceAll(body, "{{lastName}}", lastName)
+	body = strings.ReplaceAll(body, "{{PROPERTY}}", os.Getenv("PROPERTY"))
 	return body
 }
 
@@ -88,7 +89,9 @@ func SendEmailSMTP(data EmailStructure) error {
 
 		// Body
 		bodyHeader := textproto.MIMEHeader{}
-		bodyHeader.Set("Content-Type", "text/html; charset=utf-8")
+		bodyHeader.Set("Content-Type", "text/plain; charset=utf-8")
+		bodyHeader.Set("Content-Transfer-Encoding", "quoted-printable")
+
 
 		bodyPart, err := writer.CreatePart(bodyHeader)
 		if err != nil {

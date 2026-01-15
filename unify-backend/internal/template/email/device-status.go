@@ -27,7 +27,7 @@ func DeviceStatusEmail(dev models.Devices, isConnect bool) string {
 	}
 
 	return fmt.Sprintf(`
-Dear {userName}
+Dear {{firstName}} {{lastName}},
 
 %s
 
@@ -40,7 +40,7 @@ Dear {userName}
 %s
 
 Best regards,
-Courtyard by Marriott Bali Nusa Dua Resort
+{{PROPERTY}}
 `,
 		intro,
 		currentTime,
