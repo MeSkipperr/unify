@@ -126,22 +126,6 @@ func updateDeviceStatus(
 	return nil
 }
 
-func logInfo(msg string) {
-	services.CreateAppLog(services.CreateLogParams{
-		Level:       "INFO",
-		ServiceName: "monitoring-network",
-		Message:     msg,
-	})
-}
-
-func logError(msg string) {
-	services.CreateAppLog(services.CreateLogParams{
-		Level:       "ERROR",
-		ServiceName: "monitoring-network",
-		Message:     msg,
-	})
-}
-
 
 func processConnection(dev models.Devices, maxTimes int) {
 	prevErrorCount := dev.ErrorCount
@@ -163,12 +147,12 @@ func processConnection(dev models.Devices, maxTimes int) {
 	if prevIsConnect && dev.ErrorCount == maxTimes {
 		newIsConnect = false
 		sendNotification(dev, false)
-		logInfo("Device down: " + dev.Name)
+		services.LogInfo("monitoring-network", "Device down: " + dev.Name)
 	} else if !prevIsConnect && dev.ErrorCount == 0 {
 	 // RECOVER (dari disconnect → connect)
 		newIsConnect = true
 		sendNotification(dev, true)
-		logInfo("Device recovered: " + dev.Name)
+		services.LogInfo("monitoring-network", "Device recovered: " + dev.Name)
 	}
 
 	// ⛔ tidak ada perubahan → stop
@@ -178,7 +162,7 @@ func processConnection(dev models.Devices, maxTimes int) {
 
 	// update DB
 	if err := updateDeviceStatus(dev.ID, newIsConnect, dev.ErrorCount); err != nil {
-		logError("Failed to update device status: " + err.Error())
+		services.LogError("monitoring-network", "Failed to update device status: " + err.Error())
 	}
 }
 
