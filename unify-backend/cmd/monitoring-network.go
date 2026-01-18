@@ -147,12 +147,12 @@ func processConnection(dev models.Devices, maxTimes int) {
 	if prevIsConnect && dev.ErrorCount == maxTimes {
 		newIsConnect = false
 		sendNotification(dev, false)
-		services.LogInfo("monitoring-network", "Device down: " + dev.Name)
+		services.LogInfo(ServiceMonitoringNetwork, "Device down: " + dev.Name)
 	} else if !prevIsConnect && dev.ErrorCount == 0 {
 	 // RECOVER (dari disconnect → connect)
 		newIsConnect = true
 		sendNotification(dev, true)
-		services.LogInfo("monitoring-network", "Device recovered: " + dev.Name)
+		services.LogInfo(ServiceMonitoringNetwork, "Device recovered: " + dev.Name)
 	}
 
 	// ⛔ tidak ada perubahan → stop
@@ -162,7 +162,7 @@ func processConnection(dev models.Devices, maxTimes int) {
 
 	// update DB
 	if err := updateDeviceStatus(dev.ID, newIsConnect, dev.ErrorCount); err != nil {
-		services.LogError("monitoring-network", "Failed to update device status: " + err.Error())
+		services.LogError(ServiceMonitoringNetwork, "Failed to update device status: " + err.Error())
 	}
 }
 
@@ -173,14 +173,13 @@ type monitoringNetworkConfig struct {
 }
 
 func MonitoringNetwork(manager *worker.Manager) (*worker.Worker, error) {
-	const serviceName = "monitoring-network"
 
 	config := monitoringNetworkConfig{
 		Delay:         300, // default 5 minutes
 		CheckingTimes: 3,   // default 3 times
 	}
 
-	service, err := services.GetByServiceName(serviceName)
+	service, err := services.GetByServiceName(ServiceMonitoringNetwork)
 	err = json.Unmarshal(service.Config, &config)
 
 	if err != nil {
@@ -189,7 +188,7 @@ func MonitoringNetwork(manager *worker.Manager) (*worker.Worker, error) {
 	}
 
 	w := worker.NewWorker(
-		serviceName,
+		ServiceMonitoringNetwork,
 		"",
 		func() {
 			types := make([]models.DeviceType, 0, len(config.DeviceTypes))

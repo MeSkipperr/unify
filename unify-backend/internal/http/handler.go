@@ -91,7 +91,7 @@ func (h *Handler) status(w http.ResponseWriter, r *http.Request) {
 			}
 
 		case worker.StatusRestart:
-			if service == "monitoring-network" {
+			if service == cmd.ServiceMonitoringNetwork {
 				if err := RestartMonitoringNetwork(h.manager); err != nil {
 					http.Error(w, err.Error(), http.StatusInternalServerError)
 					return
@@ -122,12 +122,12 @@ func RestartMonitoringNetwork(manager *worker.Manager) error {
 		return err
 	}
 
-	old, _ := manager.Get("monitoring-network")
+	old, _ := manager.Get(cmd.ServiceMonitoringNetwork)
 	old.Stop()
 
-	manager.Replace("monitoring-network", w)
+	manager.Replace(cmd.ServiceMonitoringNetwork, w)
 	w.Start()
-	manager.SetStatus("monitoring-network", worker.StatusStarted)
+	manager.SetStatus(cmd.ServiceMonitoringNetwork, worker.StatusStarted)
 
 	return nil
 }

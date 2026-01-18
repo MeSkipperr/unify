@@ -67,3 +67,20 @@ func CreateAppLog(params CreateLogParams) error {
 
 	return logService.CreateLog(params)
 }
+
+
+func LogInfo(serviceName, msg string) {
+	CreateAppLog(CreateLogParams{
+		Level:       "INFO",
+		ServiceName: serviceName,
+		Message:     msg,
+	})
+}
+
+func LogError(serviceName, msg string) {
+	CreateAppLog(CreateLogParams{
+		Level:       "ERROR",
+		ServiceName: serviceName,
+		Message:     msg,
+	})
+}
