@@ -22,11 +22,11 @@ func RestartADBServer(ADBPath string) error {
 	if err := Kill(ADBPath); err != nil {
 		return err
 	}
-	time.Sleep(5 * time.Second)
+	time.Sleep(1 * time.Second)
 	
 	if err := Start(ADBPath); err != nil {
 		return err
 	}
-	time.Sleep(2 * time.Second)
+	time.Sleep(1 * time.Second)
 	return nil
 }
