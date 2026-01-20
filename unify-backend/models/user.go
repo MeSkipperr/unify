@@ -22,10 +22,10 @@ type User struct {
 	LastName  *string `gorm:"type:varchar(100)"`
 
 	// Email (USER & SUPERADMIN)
-	Email *string `gorm:"type:varchar(150);uniqueIndex"`
+	Email *string `gorm:"type:varchar(150);uniqueIndex:idx_users_email"`
 
 	// Credential (ADMIN & SUPERADMIN)
-	Username *string `gorm:"type:varchar(100);uniqueIndex"`
+	Username *string `gorm:"type:varchar(100);uniqueIndex:idx_users_username"`
 	Password *string `gorm:"type:text"`
 
 	// Role

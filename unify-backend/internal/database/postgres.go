@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"unify-backend/models"
 
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
@@ -28,4 +29,23 @@ func Connect() {
 	}
 
 	DB = db
+}
+
+func Migrate() {
+	err := DB.AutoMigrate(&models.AdbResult{})
+	if err != nil {
+		log.Fatal("failed to migrate database:", err)
+	}
+	err = DB.AutoMigrate(&models.Service{})
+	if err != nil {
+		log.Fatal("failed to migrate database:", err)
+	}
+	err = DB.AutoMigrate(&models.User{})
+	if err != nil {
+		log.Fatal("failed to migrate database:", err)
+	}
+	err = DB.AutoMigrate(&models.Devices{})
+	if err != nil {
+		log.Fatal("failed to migrate database:", err)
+	}
 }
