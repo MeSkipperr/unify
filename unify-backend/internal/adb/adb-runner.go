@@ -33,12 +33,12 @@ func AdbRun(opts AdbRunRequest) (AdbStatus, string) {
 		return StatusFailed, connectOutput
 	}
 
-	uptimeOutput, err := run(RenderTemplate(opts.Template, opts.Data))
-	if strings.Contains(strings.ToLower(uptimeOutput), "failed") {
-		return StatusFailed, uptimeOutput
-	} else if strings.Contains(strings.ToLower(uptimeOutput), "unauthorized") {
-		return StatusUnauthorized, uptimeOutput
+	adbOutput, err := run(RenderTemplate(opts.Template, opts.Data))
+	if strings.Contains(strings.ToLower(adbOutput), "failed") {
+		return StatusFailed, adbOutput
+	} else if strings.Contains(strings.ToLower(adbOutput), "unauthorized") {
+		return StatusUnauthorized, adbOutput
 	}
-	return StatusSuccess, uptimeOutput
+	return StatusSuccess, adbOutput
 
 }

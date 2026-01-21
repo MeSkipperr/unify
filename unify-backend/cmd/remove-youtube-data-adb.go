@@ -5,8 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"log"
-	"strconv"
-	"strings"
 	"time"
 	"unify-backend/internal/adb"
 	"unify-backend/internal/database"
@@ -17,58 +15,44 @@ import (
 	"gorm.io/gorm"
 )
 
-func processGetUptime(dev models.AdbResult, adbConfig *adb.ADBConfig) (adb.AdbStatus, string) {
+func processRemoveDataYoutube(dev models.AdbResult, adbConfig *adb.ADBConfig) (adb.AdbStatus, string) {
 	data := map[string]string{
 		"adbPath": adbConfig.ADBPath,
 		"ip":      dev.IPAddress,
 		"port":    fmt.Sprintf("%d", adbConfig.ADBPort),
+		"package": adbConfig.Package["youtube"],
 	}
 
-	status, uptimeOutput := adb.AdbRun(adb.AdbRunRequest{
+	status, outputRemoveDataYoutube := adb.AdbRun(adb.AdbRunRequest{
 		Config:   adbConfig,
-		Template: adbConfig.CommandTemplate["getUptime"],
+		Template: adbConfig.CommandTemplate["clearData"],
 		Data:     data,
 	})
-	if status == adb.StatusSuccess {
-		parts := strings.Split(uptimeOutput, " ")
-
-		if len(parts) > 0 {
-			uptimeSeconds, err := strconv.ParseFloat(parts[0], 64)
-			if err != nil {
-				return adb.StatusFailedUptime, "Failed to parse uptime output"
-			} else {
-				uptimeDays := uptimeSeconds / (60 * 60 * 24)
-				return status, fmt.Sprintf("Success - Uptime %.2f Days", uptimeDays)
-			}
-		} else {
-			return adb.StatusFailedUptime, "Unexpected uptime output format"
-		}
-	}
-	return status, uptimeOutput
+	return status, outputRemoveDataYoutube
 }
 
-type getUptimeConfig struct {
+type removeDataYoutubeConfig struct {
 	Cron        string   `json:"cron"`
 	DeviceTypes []string `json:"deviceType"`
 }
 
-func GetUptimeADB(manager *worker.Manager) (*worker.Worker, error) {
+func RemoveDataYoutubeADB(manager *worker.Manager) (*worker.Worker, error) {
 	adbConfig, err := adb.LoadADBConfig("internal/adb/adb.linux.json")
 	if err != nil {
 		log.Fatal(err)
 		return nil, err
 	}
 
-	config := getUptimeConfig{
+	config := removeDataYoutubeConfig{
 		Cron:        "0 0 10 * * *",
 		DeviceTypes: []string{""},
 	}
 
-	service, err := services.GetByServiceName(ServiceGetUptimeADB)
+	service, err := services.GetByServiceName(ServiceRemoveDataYoutubeADB)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			log.Println("service get-uptime-adb not found, worker disabled")
-			return nil, nil
+			log.Println("service remove-youtube-data-adb not found, worker disabled")
+			return nil, nil 
 		}
 		return nil, err
 	}
@@ -80,10 +64,10 @@ func GetUptimeADB(manager *worker.Manager) (*worker.Worker, error) {
 	}
 
 	return worker.NewWorker(
-		ServiceGetUptimeADB,
+		ServiceRemoveDataYoutubeADB,
 		config.Cron,
 		func() {
-			services.LogInfo(ServiceGetUptimeADB, "Starting Get Uptime ADB Service")
+			services.LogInfo(ServiceRemoveDataYoutubeADB, "Starting Remove Data Youtube ADB Service")
 
 			types := make([]models.DeviceType, 0, len(config.DeviceTypes))
 
@@ -119,7 +103,7 @@ func GetUptimeADB(manager *worker.Manager) (*worker.Worker, error) {
 				err = adb.RestartADBServer(adbConfig.ADBPath)
 				if err != nil {
 					log.Println("Error restarting ADB server:", err)
-					services.LogError(ServiceGetUptimeADB, "Error restarting ADB server: "+err.Error())
+					services.LogError(ServiceRemoveDataYoutubeADB, "Error restarting ADB server: "+err.Error())
 					return
 				}
 				for i := range adbResult {
@@ -127,25 +111,25 @@ func GetUptimeADB(manager *worker.Manager) (*worker.Worker, error) {
 						continue
 					}
 					startedAt := time.Now()
-					resStatus, value := processGetUptime(adbResult[i], adbConfig)
-					services.LogInfo(ServiceGetUptimeADB, "Device "+adbResult[i].NameDevice+" - "+fmt.Sprintf("%v", resStatus)+" - "+value)
+					resStatus, value := processRemoveDataYoutube(adbResult[i], adbConfig)
+					services.LogInfo(ServiceRemoveDataYoutubeADB, "Device "+adbResult[i].NameDevice+" - "+fmt.Sprintf("%v", resStatus)+" - "+value)
 
 					adbResult[i].Status = resStatus
 					adbResult[i].FinishTime = time.Now()
 					adbResult[i].StartTime = startedAt
 					adbResult[i].Result = value
-					adbResult[i].TypeServices = ServiceGetUptimeADB
+					adbResult[i].TypeServices = ServiceRemoveDataYoutubeADB
 				}
 			}
 
 			for _, res := range adbResult {
 				err := database.DB.Create(&res).Error
 				if err != nil {
-					services.LogError(ServiceGetUptimeADB, "Failed to save ADB result for device "+res.NameDevice+": "+err.Error())
+					services.LogError(ServiceRemoveDataYoutubeADB, "Failed to save ADB result for device "+res.NameDevice+": "+err.Error())
 				}
 			}
 
-			services.LogInfo(ServiceGetUptimeADB, "Completed Get Uptime ADB Service")
+			services.LogInfo(ServiceRemoveDataYoutubeADB, "Completed Get Uptime ADB Service")
 		},
 	), nil
 
