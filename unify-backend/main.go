@@ -53,18 +53,22 @@ import (
 
 func main() {
 	database.Connect()
+	database.Migrate()
 
 	manager := worker.NewManager()
 
 	projectHub := ws.NewHub()
 	manager.SetProjectHub(projectHub)
 
-	w, err := cmd.MonitoringNetwork(manager)
-	if err != nil {
-		log.Fatal(err)
-	}
+	errs := worker.RegisterWorkersContinue(manager, []worker.WorkerFactory{
+		cmd.MonitoringNetwork,
+		cmd.RemoveDataYoutubeADB,
+		cmd.GetUptimeADB,
+	})
 
-	manager.Register(w)
+	for _, err := range errs {
+		log.Println("worker error:", err)
+	}
 
 	mux := http.NewServeMux()
 	apiHandler := api.NewHandler(manager)

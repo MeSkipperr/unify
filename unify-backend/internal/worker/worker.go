@@ -108,3 +108,23 @@ func (w *Worker) WithRunOnce(v bool) *Worker {
 	w.RunOnce = v
 	return w
 }
+
+type WorkerFactory func(*Manager) (*Worker, error)
+
+func RegisterWorkersContinue(
+    manager *Manager,
+    factories []WorkerFactory,
+) []error {
+    var errs []error
+    for _, factory := range factories {
+        w, err := factory(manager)
+        if err != nil {
+            errs = append(errs, err)
+            continue
+        }
+        if w != nil {
+            manager.Register(w)
+        }
+    }
+    return errs
+}
