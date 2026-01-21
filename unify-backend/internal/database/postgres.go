@@ -48,4 +48,8 @@ func Migrate() {
 	if err != nil {
 		log.Fatal("failed to migrate database:", err)
 	}
+	err = DB.AutoMigrate(&models.SpeedtestResult{})
+	if err != nil {
+		log.Fatal("failed to migrate SpeedtestResult2:", err)
+	}
 }
