@@ -17,30 +17,20 @@ import (
 )
 
 type getSpeedtestNetworkConfig struct {
-	Network  []networkConfig `json:"network"`
 	Cron     string          `json:"cron"`
-	ServerID []string        `json:"serverID"`
+	Network  []networkConfig `json:"network"`
+	ServerID []string        `json:"server_id"`
 }
 
 type networkConfig struct {
-	IPAddress string `json:"ipAddress"`
 	Name      string `json:"name"`
 	Interface string `json:"interface"`
+	IPAddress string `json:"ip_address"`
 }
 
 func GetSpeedtestNetwork(manager *worker.Manager) (*worker.Worker, error) {
 
-	config := getSpeedtestNetworkConfig{
-		Network: []networkConfig{
-			{
-				IPAddress: "172.20.2.122",
-				Name:      "Guest",
-				Interface: "eth0",
-			},
-		},
-		Cron:     "0 0 */3 * * *",
-		ServerID: []string{"13623", "57152"},
-	}
+	var config getSpeedtestNetworkConfig
 
 	service, err := services.GetByServiceName(ServiceGetSpeedtestNetwork)
 	if err != nil {
@@ -50,12 +40,14 @@ func GetSpeedtestNetwork(manager *worker.Manager) (*worker.Worker, error) {
 		}
 		return nil, err
 	}
-	err = json.Unmarshal(service.Config, &config)
+	log.Println("RAW JSON:", string(service.Config))
 
+	err = json.Unmarshal(service.Config, &config)
 	if err != nil {
-		log.Fatal(err)
 		return nil, err
 	}
+
+	log.Printf("PARSED CONFIG: %+v\n", config)
 
 	return worker.NewWorker(
 		ServiceGetSpeedtestNetwork,
@@ -77,20 +69,20 @@ func GetSpeedtestNetwork(manager *worker.Manager) (*worker.Worker, error) {
 						continue
 					}
 					services.LogInfo(ServiceGetSpeedtestNetwork, "Running speedtest for IP "+network.IPAddress+" and server ID "+serverID)
-					result, err := speedtest.Run(network.IPAddress, serverID);
-					if err != nil {	
+					result, err := speedtest.Run(network.IPAddress, serverID)
+					if err != nil {
 						services.LogError(ServiceGetSpeedtestNetwork, "Failed to run speedtest for IP "+network.IPAddress+" and server ID "+serverID+": "+err.Error())
 						continue
 					}
 					resultRecord := models.SpeedtestResult{
-						TestedAt: 	time.Now(),
-						
-						NetworkName: network.Name,
+						TestedAt: time.Now(),
+
+						NetworkName:   network.Name,
 						InterfaceName: result.Interface.Name,
-						InternalIP:  result.Interface.InternalIP,
-						ExternalIP:  result.Interface.ExternalIP,
-						MACAddress:  result.Interface.MACAddr,
-						ISPName:     result.ISP,
+						InternalIP:    result.Interface.InternalIP,
+						ExternalIP:    result.Interface.ExternalIP,
+						MACAddress:    result.Interface.MACAddr,
+						ISPName:       result.ISP,
 
 						ServerID:       result.Server.ID,
 						ServerName:     result.Server.Name,
@@ -104,7 +96,7 @@ func GetSpeedtestNetwork(manager *worker.Manager) (*worker.Worker, error) {
 					}
 					// Save resultRecord to database
 
-					if err :=database.DB.Create(&resultRecord).Error; err != nil {
+					if err := database.DB.Create(&resultRecord).Error; err != nil {
 						services.LogError(ServiceGetSpeedtestNetwork, "Failed to save speedtest result for IP "+network.IPAddress+" and server ID "+serverID+": "+err.Error())
 						continue
 					}

@@ -7,14 +7,14 @@ import (
 )
 
 type LocalIPInfo struct {
-	Exists       bool
-	IPAddress    string
-	Interface    string
-	Netmask      string
-	CIDR         string
-	IPVersion    int // 4 or 6
-	IsLoopback   bool
-	IsUp         bool
+	Exists     bool
+	IPAddress  string
+	Interface  string
+	Netmask    string
+	CIDR       string
+	IPVersion  int // 4 or 6
+	IsLoopback bool
+	IsUp       bool
 }
 
 // HasLocalIP mengecek apakah IP ada di interface lokal
@@ -28,7 +28,6 @@ func CheckLocalIp(ip string) (*LocalIPInfo, error) {
 		return nil, fmt.Errorf("unsupported OS")
 	}
 }
-
 
 func getLocalIPInfoLinux(ip string) (*LocalIPInfo, error) {
 	ifaces, err := net.Interfaces()
@@ -47,14 +46,17 @@ func getLocalIPInfoLinux(ip string) (*LocalIPInfo, error) {
 			if !ok {
 				continue
 			}
-
-			if ipNet.IP.String() == ip {
+			parsedIP := net.ParseIP(ip)
+			if parsedIP == nil {
+				return nil, fmt.Errorf("invalid IP address")
+			}
+			if ipNet.IP.Equal(parsedIP) {
 				ones, _ := ipNet.Mask.Size()
 
 				return &LocalIPInfo{
-					Exists:     true,
-					IPAddress:  ip,
-					Interface:  iface.Name,
+					Exists:    true,
+					IPAddress: ip,
+					Interface: iface.Name,
 					Netmask:   net.IP(ipNet.Mask).String(),
 					CIDR:      fmt.Sprintf("%s/%d", ip, ones),
 					IPVersion: func() int {
@@ -74,7 +76,6 @@ func getLocalIPInfoLinux(ip string) (*LocalIPInfo, error) {
 	return &LocalIPInfo{Exists: false}, nil
 }
 
-
 func getLocalIPInfoWindows(ip string) (*LocalIPInfo, error) {
 	ifaces, err := net.Interfaces()
 	if err != nil {
@@ -92,14 +93,17 @@ func getLocalIPInfoWindows(ip string) (*LocalIPInfo, error) {
 			if !ok {
 				continue
 			}
-
-			if ipNet.IP.String() == ip {
+			parsedIP := net.ParseIP(ip)
+			if parsedIP == nil {
+				return nil, fmt.Errorf("invalid IP address")
+			}
+			if ipNet.IP.Equal(parsedIP) {
 				ones, _ := ipNet.Mask.Size()
 
 				return &LocalIPInfo{
-					Exists:     true,
-					IPAddress:  ip,
-					Interface:  iface.Name,
+					Exists:    true,
+					IPAddress: ip,
+					Interface: iface.Name,
 					Netmask:   net.IP(ipNet.Mask).String(),
 					CIDR:      fmt.Sprintf("%s/%d", ip, ones),
 					IPVersion: func() int {
