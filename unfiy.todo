@@ -13,8 +13,10 @@ UNIFY-BACKEND
     [X]UBAH DATA STATUS
     [X] MENDAPATKAN DATA
     [X] TESTING 
-    [ ] Update Last Status Change
+    [X] Update Last Status Change
 
-[ ] SpeedTest
+[X] SpeedTest
     [X] logic SpeedTest
-    [ ] Testing
+    [X] Testing
+
+[ ] PORT FORWARD
