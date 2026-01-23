@@ -50,6 +50,10 @@ func Migrate() {
 	}
 	err = DB.AutoMigrate(&models.SpeedtestResult{})
 	if err != nil {
-		log.Fatal("failed to migrate SpeedtestResult2:", err)
+		log.Fatal("failed to migrate SpeedtestResult:", err)
+	}
+	err = DB.AutoMigrate(&models.SessionPortForward{})
+	if err != nil {
+		log.Fatal("failed to migrate SessionPortForward:", err)
 	}
 }

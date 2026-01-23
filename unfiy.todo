@@ -20,3 +20,6 @@ UNIFY-BACKEND
     [X] Testing
 
 [ ] PORT FORWARD
+    [X] logic
+    [ ] Log To database
+    [ ] testing
