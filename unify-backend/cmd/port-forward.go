@@ -1,7 +1,7 @@
 package cmd
 
 import (
-	"encoding/json"
+	// "encoding/json"
 	"errors"
 	"fmt"
 	"log"
@@ -24,6 +24,7 @@ func SyncSessionPortForward(s *models.SessionPortForward) error {
 			s.Status = models.SessionStatusError
 			return err
 		}
+		log.Println("applied port forward rule for session ID", s.ID)
 		s.Status = models.SessionStatusActive
 		return nil
 
@@ -31,12 +32,14 @@ func SyncSessionPortForward(s *models.SessionPortForward) error {
 		return nil
 
 	case models.SessionStatusExpired, models.SessionStatusDisabled:
+		services.LogInfo(ServicePortForward,fmt.Sprintf("deleting port forward rule for session ID %d", s.ID))
 		if err := iptables.DeleteRule(*s); err != nil {
 			return err
 		}
 		return nil
 
 	default:
+		services.LogError(ServicePortForward,fmt.Sprintf("invalid session status: %s", s.Status))
 		return fmt.Errorf("invalid session status: %s", s.Status)
 	}
 }
@@ -97,6 +100,7 @@ func startExpireWorker(db *gorm.DB, interval time.Duration) {
 		).Find(&sessions).Error
 		if err != nil {
 			log.Println("[expire-worker] failed query:", err)
+			services.LogError(ServicePortForward, "Error Query Expire Port Forward Sessions : "+err.Error())
 			continue
 		}
 
@@ -105,23 +109,24 @@ func startExpireWorker(db *gorm.DB, interval time.Duration) {
 
 			if err := SyncSessionPortForward(&s); err != nil {
 				log.Println("[expire-worker] failed sync:", err)
+				services.LogError(ServicePortForward, "Error Expire Port Forward Session ID "+fmt.Sprint(s.ID)+" : "+err.Error())
 				s.Status = models.SessionStatusError
 			}
 
 			if err := db.Save(&s).Error; err != nil {
 				log.Println("[expire-worker] failed save:", err)
+				services.LogError(ServicePortForward, "Error Save Expire Port Forward Session ID "+fmt.Sprint(s.ID)+" : "+err.Error())
 			}
 		}
 	}
 }
-
 
 type portForwardConfig struct {
 	SyncInterval   int `json:"sync_interval"`
 	ExpireInterval int `json:"expire_interval"`
 }
 
-func RunPortForwardServices(manager *worker.Manager) (*worker.Worker, error) {
+func RunPortForwardSession(manager *worker.Manager) (*worker.Worker, error) {
 	db := database.DB
 
 	config := portForwardConfig{
@@ -129,14 +134,14 @@ func RunPortForwardServices(manager *worker.Manager) (*worker.Worker, error) {
 		ExpireInterval: 30,
 	}
 
-	service, err := services.GetByServiceName(ServiceMonitoringNetwork)
-	if err != nil {
-		return nil, err
-	}
+	// service, err := services.GetByServiceName(ServiceMonitoringNetwork)
+	// if err != nil {
+	// 	return nil, err
+	// }
 
-	if err := json.Unmarshal(service.Config, &config); err != nil {
-		return nil, err
-	}
+	// if err := json.Unmarshal(service.Config, &config); err != nil {
+	// 	return nil, err
+	// }
 
 	chain := os.Getenv("IPTABLES_NAT_CHAIN_PORT_FORWARD")
 	if chain == "" {
@@ -147,29 +152,31 @@ func RunPortForwardServices(manager *worker.Manager) (*worker.Worker, error) {
 		return nil, err
 	}
 
-w := worker.NewWorker(
-	ServiceMonitoringNetwork,
-	"",
-	func() {
+	w := worker.NewWorker(
+		ServicePortForward,
+		"",
+		func() {
+			services.LogInfo(ServicePortForward, "Starting Port Forward Session Worker")
 
-		// 1. CLEAN
-		if err := iptables.CleanupAllPortForwardRules(db); err != nil {
-			log.Println("cleanup failed:", err)
-		}
+			// 1. CLEAN
+			if err := iptables.CleanupAllPortForwardRules(db); err != nil {
+				log.Println("cleanup failed:", err)
+				services.LogError(ServicePortForward, "Error Clean Up ip tables : "+err.Error())
+			}
 
-		// 2. REBUILD
-		if err := iptables.RebuildActivePortForward(db); err != nil {
-			log.Println("rebuild failed:", err)
-		}
+			// 2. REBUILD
+			if err := iptables.RebuildActivePortForward(db); err != nil {
+				log.Println("rebuild failed:", err)
+				services.LogError(ServicePortForward, "Error Rebuild ip tables : "+err.Error())
+			}
 
-		// 3. START WORKERS
-		go startSyncWorker(db, time.Duration(config.SyncInterval)*time.Second)
-		go startExpireWorker(db, time.Duration(config.ExpireInterval)*time.Second)
-	},
-)
-
+			// 3. START WORKERS
+			go startSyncWorker(db, time.Duration(config.SyncInterval)*time.Second)
+			go startExpireWorker(db, time.Duration(config.ExpireInterval)*time.Second)
+		},
+	)
 
 	// worker manager yang mengontrol lifecycle
-	w.RunOnce = false
+	w.RunOnce = true
 	return w, nil
 }
