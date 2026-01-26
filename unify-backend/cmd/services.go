@@ -6,4 +6,5 @@ const (
 	ServiceRemoveDataYoutubeADB string = "remove-youtube-data-adb"
 	ServiceGetSpeedtestNetwork  string = "get-speedtest-network"
 	ServicePortForward          string = "port-forward"
+	ServiceMTRSession           string = "mtr-session"
 )

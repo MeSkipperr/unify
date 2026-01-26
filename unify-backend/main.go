@@ -33,12 +33,12 @@ func main() {
 		cmd.GetUptimeADB,
 		cmd.GetSpeedtestNetwork,
 		cmd.RunPortForwardSession,
+		cmd.RunMTRSession,
 	})
 
 	for _, err := range errs {
 		log.Println("worker error:", err)
 	}
-
 
 	mux := http.NewServeMux()
 	apiHandler := api.NewHandler(manager)

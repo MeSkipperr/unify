@@ -21,6 +21,14 @@ UNIFY-BACKEND
 
 [ ] PORT FORWARD
     [X] logic
-    [ ] Log To database
-    [ ] Delete Rule when status is DISABLE
-    [ ] testing
+    [X] Log To database
+    [X] Delete Rule when status is DISABLE
+    [X] testing
+    [ ] CRUD API
+
+[ ] MTR
+    [X] MTR Function 
+    [ ] Save To database
+    [ ] Send with web socket
+    [ ] APi call
+    
