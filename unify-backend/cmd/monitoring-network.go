@@ -174,16 +174,12 @@ type monitoringNetworkConfig struct {
 
 func MonitoringNetwork(manager *worker.Manager) (*worker.Worker, error) {
 
-	config := monitoringNetworkConfig{
-		Delay:         300, // default 5 minutes
-		CheckingTimes: 3,   // default 3 times
-	}
+	var config monitoringNetworkConfig
 
 	service, err := services.GetByServiceName(ServiceMonitoringNetwork)
 	err = json.Unmarshal(service.Config, &config)
 
 	if err != nil {
-		log.Fatal(err)
 		return nil, err
 	}
 

@@ -43,23 +43,19 @@ func RemoveDataYoutubeADB(manager *worker.Manager) (*worker.Worker, error) {
 		return nil, err
 	}
 
-	config := removeDataYoutubeConfig{
-		Cron:        "0 0 10 * * *",
-		DeviceTypes: []string{""},
-	}
+	var config removeDataYoutubeConfig
 
 	service, err := services.GetByServiceName(ServiceRemoveDataYoutubeADB)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			log.Println("service remove-youtube-data-adb not found, worker disabled")
-			return nil, nil 
+			return nil, nil
 		}
 		return nil, err
 	}
-	err = json.Unmarshal(service.Config, &config)
 
+	err = json.Unmarshal(service.Config, &config)
 	if err != nil {
-		log.Fatal(err)
 		return nil, err
 	}
 

@@ -40,15 +40,11 @@ func GetSpeedtestNetwork(manager *worker.Manager) (*worker.Worker, error) {
 		}
 		return nil, err
 	}
-	log.Println("RAW JSON:", string(service.Config))
 
 	err = json.Unmarshal(service.Config, &config)
 	if err != nil {
 		return nil, err
 	}
-
-	log.Printf("PARSED CONFIG: %+v\n", config)
-
 	return worker.NewWorker(
 		ServiceGetSpeedtestNetwork,
 		config.Cron,

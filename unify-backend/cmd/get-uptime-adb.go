@@ -59,10 +59,7 @@ func GetUptimeADB(manager *worker.Manager) (*worker.Worker, error) {
 		return nil, err
 	}
 
-	config := getUptimeConfig{
-		Cron:        "0 0 10 * * *",
-		DeviceTypes: []string{""},
-	}
+	var config getUptimeConfig
 
 	service, err := services.GetByServiceName(ServiceGetUptimeADB)
 	if err != nil {
@@ -72,10 +69,9 @@ func GetUptimeADB(manager *worker.Manager) (*worker.Worker, error) {
 		}
 		return nil, err
 	}
-	err = json.Unmarshal(service.Config, &config)
 
+	err = json.Unmarshal(service.Config, &config)
 	if err != nil {
-		log.Fatal(err)
 		return nil, err
 	}
 
