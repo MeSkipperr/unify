@@ -9,11 +9,17 @@ import (
 type SessionStatus string
 
 const (
-	SessionStatusPending  SessionStatus = "pending"
-	SessionStatusActive   SessionStatus = "active"
-	SessionStatusExpired  SessionStatus = "expired"
-	SessionStatusDisabled SessionStatus = "disabled"
-	SessionStatusError    SessionStatus = "error"
+	SessionStatusPending     SessionStatus = "pending"     // waiting to be applied
+	SessionStatusActive      SessionStatus = "active"      // currently applied
+	SessionStatusInactive    SessionStatus = "inactive"    // disabled
+	SessionStatusExpired     SessionStatus = "expired"     // expired and removed
+	SessionStatusDeactivated SessionStatus = "deactivated" // manually disabled
+	SessionStatusError       SessionStatus = "error"       // error occurred during application
+
+	// State transitions:
+	//  pending -> active
+	//  active -> if expires_at < now() -> expired
+	//  active -> if manually disabled  -> deactivated -> inactive
 )
 
 type SessionPortForward struct {

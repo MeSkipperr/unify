@@ -22,4 +22,5 @@ UNIFY-BACKEND
 [ ] PORT FORWARD
     [X] logic
     [ ] Log To database
+    [ ] Delete Rule when status is DISABLE
     [ ] testing

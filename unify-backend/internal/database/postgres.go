@@ -56,4 +56,8 @@ func Migrate() {
 	if err != nil {
 		log.Fatal("failed to migrate SessionPortForward:", err)
 	}
+	err = DB.AutoMigrate(&models.Log{})
+	if err != nil {
+		log.Fatal("failed to migrate Log:", err)
+	}
 }

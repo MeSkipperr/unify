@@ -1,7 +1,7 @@
 package cmd
 
 import (
-	// "encoding/json"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"log"
@@ -16,114 +16,109 @@ import (
 	"gorm.io/gorm"
 )
 
-func SyncSessionPortForward(s *models.SessionPortForward) error {
+
+func handleExpiry(s *models.SessionPortForward, now time.Time) {
+	if s.Status == models.SessionStatusDeactivated {
+		s.Status = models.SessionStatusInactive
+		return
+	}
+	if !s.ExpiresAt.Before(now) {
+		return
+	}
+	switch s.Status {
+	case models.SessionStatusActive:
+		s.Status = models.SessionStatusExpired
+
+	case models.SessionStatusPending:
+		s.Status = models.SessionStatusInactive
+	}
+}
+
+func handleSessionState(db *gorm.DB, s *models.SessionPortForward) {
 	switch s.Status {
 
 	case models.SessionStatusPending:
-		if err := iptables.ApplyRule(s); err != nil {
-			s.Status = models.SessionStatusError
-			return err
-		}
-		log.Println("applied port forward rule for session ID", s.ID)
-		s.Status = models.SessionStatusActive
-		return nil
+		handlePending(db, s)
+
+	case models.SessionStatusExpired,
+		models.SessionStatusInactive:
+		handleExpired(db, s)
+
+	case models.SessionStatusDeactivated:
+		db.Save(s)
 
 	case models.SessionStatusActive:
-		return nil
-
-	case models.SessionStatusExpired, models.SessionStatusDisabled:
-		services.LogInfo(ServicePortForward,fmt.Sprintf("deleting port forward rule for session ID %d", s.ID))
-		if err := iptables.DeleteRule(*s); err != nil {
-			return err
-		}
-		return nil
-
-	default:
-		services.LogError(ServicePortForward,fmt.Sprintf("invalid session status: %s", s.Status))
-		return fmt.Errorf("invalid session status: %s", s.Status)
+		return
 	}
 }
 
-func ExpireWorkerPortForward(db *gorm.DB, interval time.Duration) {
+func handlePending(db *gorm.DB, s *models.SessionPortForward) {
+	if err := iptables.ApplyRule(s); err != nil {
+		s.Status = models.SessionStatusError
+		services.LogError(
+			ServicePortForward,
+			fmt.Sprintf("failed to apply rule for session %s: %v", s.ID, err),
+		)
+		db.Save(s)
+		return
+	}
+
+	s.Status = models.SessionStatusActive
+	db.Save(s)
+
+	services.LogInfo(
+		ServicePortForward,
+		fmt.Sprintf("applied port forward rule for session %s", s.ID),
+	)
+}
+
+func handleExpired(db *gorm.DB, s *models.SessionPortForward) {
+	if err := iptables.DeleteRule(*s); err != nil {
+		s.Status = models.SessionStatusError
+		services.LogError(
+			ServicePortForward,
+			fmt.Sprintf("failed to delete rule for session %s: %v", s.ID, err),
+		)
+		db.Save(s)
+		return
+	}
+
+	db.Save(s)
+
+	services.LogInfo(
+		ServicePortForward,
+		fmt.Sprintf("deleted expired rule for session %s", s.ID),
+	)
+}
+
+func startSyncSessionPortForwardWorker(db *gorm.DB, interval time.Duration) {
 	ticker := time.NewTicker(interval)
+	defer ticker.Stop()
 
-	go func() {
-		for range ticker.C {
-			var sessions []models.SessionPortForward
+	for range ticker.C {
+		var sessions []models.SessionPortForward
+		now := time.Now()
 
-			db.Where(
-				"expires_at < NOW() AND status = ?",
+		if err := db.Where(
+			"status IN ?",
+			[]models.SessionStatus{
+				models.SessionStatusPending,
 				models.SessionStatusActive,
-			).Find(&sessions)
-
-			for _, s := range sessions {
-				if err := iptables.DeleteRule(s); err != nil {
-					continue
-				}
-
-				s.Status = models.SessionStatusExpired
-				db.Save(&s)
-			}
-		}
-	}()
-}
-
-func startSyncWorker(db *gorm.DB, interval time.Duration) {
-	ticker := time.NewTicker(interval)
-
-	for range ticker.C {
-		var sessions []models.SessionPortForward
-
-		db.Where(
-			"status = ?",
-			models.SessionStatusPending,
-		).Find(&sessions)
-
-		for _, s := range sessions {
-			if err := SyncSessionPortForward(&s); err != nil {
-				s.Status = models.SessionStatusError
-			}
-			db.Save(&s)
-		}
-	}
-}
-
-func startExpireWorker(db *gorm.DB, interval time.Duration) {
-	ticker := time.NewTicker(interval)
-
-	for range ticker.C {
-		var sessions []models.SessionPortForward
-
-		err := db.Where(
-			"status = ? AND expires_at <= NOW()",
-			models.SessionStatusActive,
-		).Find(&sessions).Error
-		if err != nil {
-			log.Println("[expire-worker] failed query:", err)
-			services.LogError(ServicePortForward, "Error Query Expire Port Forward Sessions : "+err.Error())
+				models.SessionStatusDeactivated,
+			},
+		).Find(&sessions).Error; err != nil {
 			continue
 		}
 
 		for _, s := range sessions {
-			s.Status = models.SessionStatusExpired
-
-			if err := SyncSessionPortForward(&s); err != nil {
-				log.Println("[expire-worker] failed sync:", err)
-				services.LogError(ServicePortForward, "Error Expire Port Forward Session ID "+fmt.Sprint(s.ID)+" : "+err.Error())
-				s.Status = models.SessionStatusError
-			}
-
-			if err := db.Save(&s).Error; err != nil {
-				log.Println("[expire-worker] failed save:", err)
-				services.LogError(ServicePortForward, "Error Save Expire Port Forward Session ID "+fmt.Sprint(s.ID)+" : "+err.Error())
-			}
+			handleExpiry(&s, now)
+			handleSessionState(db, &s)
 		}
 	}
 }
 
 type portForwardConfig struct {
 	SyncInterval   int `json:"sync_interval"`
-	ExpireInterval int `json:"expire_interval"`
 }
 
 func RunPortForwardSession(manager *worker.Manager) (*worker.Worker, error) {
@@ -131,17 +126,21 @@ func RunPortForwardSession(manager *worker.Manager) (*worker.Worker, error) {
 
 	config := portForwardConfig{
 		SyncInterval:   10,
-		ExpireInterval: 30,
 	}
 
-	// service, err := services.GetByServiceName(ServiceMonitoringNetwork)
-	// if err != nil {
-	// 	return nil, err
-	// }
+	service, err := services.GetByServiceName(ServicePortForward)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			log.Println("service port-forward not found, worker disabled")
+			return nil, nil
+		}
+		return nil, err
+	}
 
-	// if err := json.Unmarshal(service.Config, &config); err != nil {
-	// 	return nil, err
-	// }
+	err = json.Unmarshal(service.Config, &config)
+	if err != nil {
+		return nil, err
+	}
 
 	chain := os.Getenv("IPTABLES_NAT_CHAIN_PORT_FORWARD")
 	if chain == "" {
@@ -159,7 +158,7 @@ func RunPortForwardSession(manager *worker.Manager) (*worker.Worker, error) {
 			services.LogInfo(ServicePortForward, "Starting Port Forward Session Worker")
 
 			// 1. CLEAN
-			if err := iptables.CleanupAllPortForwardRules(db); err != nil {
+			if err := iptables.CleanupAllPortForwardRules(db, chain); err != nil {
 				log.Println("cleanup failed:", err)
 				services.LogError(ServicePortForward, "Error Clean Up ip tables : "+err.Error())
 			}
@@ -171,8 +170,7 @@ func RunPortForwardSession(manager *worker.Manager) (*worker.Worker, error) {
 			}
 
 			// 3. START WORKERS
-			go startSyncWorker(db, time.Duration(config.SyncInterval)*time.Second)
-			go startExpireWorker(db, time.Duration(config.ExpireInterval)*time.Second)
+			go startSyncSessionPortForwardWorker(db, time.Duration(config.SyncInterval)*time.Second)
 		},
 	)
 

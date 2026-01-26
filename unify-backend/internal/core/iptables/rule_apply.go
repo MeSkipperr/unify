@@ -16,6 +16,11 @@ func ApplyRule(s *models.SessionPortForward) error {
 		return err
 	}
 
+	args = BuildMasqueradeArgs(*s)
+	if err := exec.Command("iptables", args...).Run(); err != nil {
+		return err
+	}
+
 	now := time.Now()
 	s.LastAppliedAt = &now
 	return nil

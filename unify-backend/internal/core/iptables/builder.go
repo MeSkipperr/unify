@@ -9,9 +9,12 @@ func BuildRuleArgs(s models.SessionPortForward) []string {
 	args := []string{
 		"-t", "nat",
 		"-A", s.Chain,
-		"-d", s.ListenIP,
 		"-p", s.Protocol,
 		"--dport", fmt.Sprint(s.ListenPort),
+	}
+
+	if s.ListenIP != "" {
+		args = append(args, "-d", s.ListenIP)
 	}
 
 	if s.Interface != "" {
@@ -22,11 +25,19 @@ func BuildRuleArgs(s models.SessionPortForward) []string {
 		args = append(args, "-s", s.AllowSourceIP)
 	}
 
-	args = append(args,
-		"-j", "DNAT",
-		"--to-destination",
-		fmt.Sprintf("%s:%d", s.DestIP, s.DestPort),
-	)
+	// 🔥 PENTING: pilih DNAT vs REDIRECT
+	if s.ListenIP == s.DestIP || s.DestIP == "127.0.0.1" {
+		args = append(args,
+			"-j", "REDIRECT",
+			"--to-port", fmt.Sprint(s.DestPort),
+		)
+	} else {
+		args = append(args,
+			"-j", "DNAT",
+			"--to-destination",
+			fmt.Sprintf("%s:%d", s.DestIP, s.DestPort),
+		)
+	}
 
 	if s.RuleComment != "" {
 		args = append(args, "-m", "comment", "--comment", s.RuleComment)
@@ -34,3 +45,4 @@ func BuildRuleArgs(s models.SessionPortForward) []string {
 
 	return args
 }
+
