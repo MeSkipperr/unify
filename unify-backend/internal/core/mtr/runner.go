@@ -2,11 +2,13 @@ package mtr
 
 import (
 	"bytes"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"os/exec"
 )
-func Run(cfg Config) (*Result, error) {
+
+func Run(cfg Config) (*MtrResultJson, error) {
 	if cfg.DestHost == "" {
 		return nil, errors.New("DestHost is required")
 	}
@@ -30,5 +32,18 @@ func Run(cfg Config) (*Result, error) {
 		return nil, fmt.Errorf("mtr failed: %v (%s)", err, stderr.String())
 	}
 
-	return ParseResult(stdout.Bytes())
+	var raw MtrResultJson
+	if err := json.Unmarshal(stdout.Bytes(), &raw); err != nil {
+		return nil, err
+	}
+
+	raw.Report.Result.TotalHops = len(raw.Report.HopResult)
+	if len(raw.Report.HopResult) > 0 {
+		raw.Report.Result.Reachable =
+			raw.Report.HopResult[len(raw.Report.HopResult)-1].Host == cfg.DestHost
+
+			raw.Report.Result.AvgRTT = raw.Report.HopResult[len(raw.Report.HopResult)-1].Avg
+	}
+
+	return &raw, nil
 }

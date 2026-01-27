@@ -2,6 +2,7 @@ package cmd
 
 import (
 	// "errors"
+	"encoding/json"
 	"fmt"
 	"log"
 	"time"
@@ -24,7 +25,7 @@ type MTRSessionConfig struct {
 type mtrSessionParms struct {
 	db      *gorm.DB
 	session models.MTRSession
-	out     mtr.Result
+	out     mtr.MtrResultJson
 	config  MTRSessionConfig
 	manager *worker.Manager
 }
@@ -33,21 +34,20 @@ func saveMtrResult(data mtrSessionParms) error {
 	// Save the MTR result to the database
 	db := data.db
 	session := data.session
-	out := data.out
+	out := data.out.Report
 
 	mtrResult := models.MTRResult{
 		SessionID: session.ID.String(),
 
-		SourceIP:      out.Hops[0].IP,
+		SourceIP:      out.HopResult[0].Host,
 		DestinationIP: session.DestinationIP,
 		Protocol:      session.Protocol,
 		Port:          session.Port,
 		Test:          session.Test,
 
-		TotalHops: out.TotalHops,
-		Reachable: out.Reachable,
-		MaxLoss:   out.MaxLoss,
-		AvgRTT:    out.AvgRTT,
+		TotalHops: out.Result.TotalHops,
+		Reachable: out.Result.Reachable,
+		AvgRTT:    out.Result.AvgRTT,
 	}
 
 	result := db.Create(&mtrResult)
@@ -55,16 +55,20 @@ func saveMtrResult(data mtrSessionParms) error {
 		return result.Error
 	}
 
-	for _, hop := range out.Hops {
+	for _, hop := range out.HopResult {
 
 		mtrHop := models.MTRHop{
-			ResultID:  mtrResult.ID.String(),
-			Hop:       hop.Hop,
-			Host:      hop.IP,
-			Loss:      hop.Loss,
-			Avg:       hop.AvgRTT,
-			IpAddress: hop.IP,
-			DNS:       dns.ReverseDNS(hop.IP)[0],
+			ResultID: mtrResult.ID.String(),
+			Hop:      hop.Count,
+			Host:     hop.Host,
+			DNS:      dns.ReverseDNS(hop.Host)[0],
+			Loss:     hop.Loss,
+			Sent:     hop.Snt,
+			Last:     hop.Last,
+			Avg:      hop.Avg,
+			Best:     hop.Best,
+			Worst:    hop.Worst,
+			StdDev:   hop.Worst,
 		}
 		result = db.Create(&mtrHop)
 		if result.Error != nil {
@@ -137,54 +141,55 @@ func sendPacketUseWebsocket(data mtrSessionParms) {
 }
 
 func startSyncSessionMTRWorker(db *gorm.DB, config MTRSessionConfig, manager *worker.Manager) {
-	ticker := time.NewTicker(time.Duration(config.Interval) * time.Second)
-	defer ticker.Stop()
+	var sessions []models.MTRSession
+	result := db.Find(&sessions).Where("status = ?", "active")
+	if result.Error != nil {
+		services.LogError(ServiceMTRSession, "Failed to fetch MTR sessions: "+result.Error.Error())
+		return
+	}
 
-	for {
-		<-ticker.C
-		var sessions []models.MTRSession
-		result := db.Find(&sessions).Where("status = ?", "active")
-		if result.Error != nil {
-			services.LogError(ServiceMTRSession, "Failed to fetch MTR sessions: "+result.Error.Error())
-			continue
-		}
+	for _, session := range sessions {
+		go func(s models.MTRSession) {
+			// Here you would add the logic to perform MTR and store results
+			services.LogInfo(ServiceMTRSession, "Processing MTR session ID: "+s.ID.String())
+			out, err := mtr.Run(mtr.Config{
+				DestHost: s.DestinationIP,
+				SourceIP: s.SourceIP,
+				Protocol: mtr.Protocol(s.Protocol),
+				Port:     s.Port,
+				Count:    s.Test,
+				JSON:     true,
+				UseDNS:   false,
+			})
 
-		for _, session := range sessions {
-			go func(s models.MTRSession) {
-				// Here you would add the logic to perform MTR and store results
-				services.LogInfo(ServiceMTRSession, "Processing MTR session ID: "+s.ID.String())
-				out, err := mtr.Run(mtr.Config{
-					DestHost: s.DestinationIP,
-					SourceIP: s.SourceIP,
-					Protocol: mtr.Protocol(s.Protocol),
-					Port:     s.Port,
-					Count:    s.Test,
-					JSON:     true,
-					UseDNS:   false,
-				})
+			if err != nil {
+				services.LogError(ServiceMTRSession, "MTR run failed for session ID "+s.ID.String()+": "+err.Error())
+				return
+			}
+			log.Println("[MTR RESULT]")
 
-				if err != nil {
-					services.LogError(ServiceMTRSession, "MTR run failed for session ID "+s.ID.String()+": "+err.Error())
-					return
-				}
-				log.Println("[MTR RESULT]")
+			params := mtrSessionParms{
+				db:      db,
+				session: s,
+				config:  config,
+				out:     *out,
+				manager: manager,
+			}
 
-				params := mtrSessionParms{
-					db:      db,
-					session: s,
-					config:  config,
-					out:     *out,
-					manager: manager,
-				}
+			saveMtrResult(params)
+			updateMtrSessionLastRun(params)
+			sendLossConnectionAlert(params)
+			sendPacketUseWebsocket(params)
 
-				saveMtrResult(params)
-				updateMtrSessionLastRun(params)
-				sendLossConnectionAlert(params)
-				sendPacketUseWebsocket(params)
+			b, err := json.MarshalIndent(out, "", "  ")
+			if err != nil {
+				log.Println("marshal error:", err)
+				return
+			}
 
-				fmt.Println(out)
-			}(session)
-		}
+			fmt.Println(string(b))
+
+		}(session)
 	}
 }
 
@@ -212,15 +217,14 @@ func RunMTRSession(manager *worker.Manager) (*worker.Worker, error) {
 
 	w := worker.NewWorker(
 		ServiceMTRSession,
-		"",
+		"*/10 * * * * *",
 		func() {
 			services.LogInfo(ServiceMTRSession, "Starting MTR Session Session Worker")
 
-			go startSyncSessionMTRWorker(db, config, manager)
+			startSyncSessionMTRWorker(db, config, manager)
 		},
 	)
 
 	// worker manager yang mengontrol lifecycle
-	w.RunOnce = true
 	return w, nil
 }

@@ -32,4 +32,5 @@ UNIFY-BACKEND
         [ ] Save Detail Connection
     [X] Send with web socket
     [ ] APi call
+    [ ] LOG Print
     

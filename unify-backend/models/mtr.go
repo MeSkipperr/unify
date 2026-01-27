@@ -39,7 +39,6 @@ type MTRResult struct {
 
 	TotalHops int
 	Reachable bool
-	MaxLoss   float64
 	AvgRTT    float64
 
 	Hops []MTRHop `gorm:"foreignKey:ResultID;constraint:OnDelete:CASCADE"`
@@ -51,11 +50,10 @@ type MTRHop struct {
 
 	Hop       int    `gorm:"index"`
 	Host      string `gorm:"type:varchar(255)"`
-	IpAddress string `gorm:"type:varchar(45);not null;index"`
 	DNS       string `gorm:"type:varchar(255);index"`
 
-	Sent   int
 	Loss   float64
+	Sent   int
 	Last   float64
 	Avg    float64
 	Best   float64
