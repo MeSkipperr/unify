@@ -24,9 +24,6 @@ func main() {
 
 	manager := worker.NewManager()
 
-	projectHub := ws.NewHub()
-	manager.SetProjectHub(projectHub)
-
 	errs := worker.RegisterWorkersContinue(manager, []worker.WorkerFactory{
 		cmd.MonitoringNetwork,
 		cmd.RemoveDataYoutubeADB,
@@ -44,7 +41,10 @@ func main() {
 	apiHandler := api.NewHandler(manager)
 	mux.Handle("/", apiHandler)
 
-	mux.Handle("/ws/project", ws.ServeWS(projectHub))
+	mtrSocket := ws.NewHub()
+	manager.SetMTRhub(mtrSocket)
+
+	mux.Handle("/ws/mtr", ws.ServeWS(mtrSocket))
 
 	log.Println("server running on port", config.ServerPort)
 	if err := http.ListenAndServe(config.ServerPort, mux); err != nil {

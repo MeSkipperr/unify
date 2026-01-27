@@ -15,11 +15,11 @@ type MTRSession struct {
 
 	LastRunAt *time.Time `gorm:"index"`
 
-	SourceIP string `gorm:"type:varchar(45)"`
+	SourceIP      string `gorm:"type:varchar(45)"`
 	DestinationIP string `gorm:"type:varchar(45);not null;index"`
 
 	Protocol string `gorm:"type:varchar(10);not null;default:'icmp';index"`
-	Port *int
+	Port     *int
 
 	Test int `gorm:"not null;default:10"`
 
@@ -27,7 +27,7 @@ type MTRSession struct {
 }
 
 type MTRResult struct {
-	ID        uuid.UUID `gorm:"type:uuid;default:uuid_generate_v4();primaryKey"`
+	ID        uuid.UUID `gorm:"type:uuid;default:gen_random_uuid();primaryKey"`
 	SessionID string    `gorm:"type:uuid;index"`
 	CreatedAt time.Time `gorm:"autoCreateTime"`
 
@@ -46,11 +46,13 @@ type MTRResult struct {
 }
 
 type MTRHop struct {
-	ID       uuid.UUID `gorm:"type:uuid;default:uuid_generate_v4();primaryKey"`
+	ID       uuid.UUID `gorm:"type:uuid;default:gen_random_uuid();primaryKey"`
 	ResultID string    `gorm:"type:uuid;index"`
 
-	Hop  int    `gorm:"index"`
-	Host string `gorm:"type:varchar(255)"`
+	Hop       int    `gorm:"index"`
+	Host      string `gorm:"type:varchar(255)"`
+	IpAddress string `gorm:"type:varchar(45);not null;index"`
+	DNS       string `gorm:"type:varchar(255);index"`
 
 	Sent   int
 	Loss   float64

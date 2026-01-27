@@ -4,6 +4,6 @@ import "time"
 
 type Message struct {
 	Time    time.Time   `json:"time"`
-	ID      int      `json:"id"`
+	ID      string      `json:"id"`
 	Message interface{} `json:"message"`
 }

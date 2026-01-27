@@ -10,7 +10,7 @@ type Manager struct {
 	mu      sync.RWMutex
 	workers map[string]*Worker
 	status  map[string]Status
-	projectHub   *ws.Hub
+	setMTRhub   *ws.Hub
 }
 
 func NewManager() *Manager {
@@ -89,13 +89,13 @@ func (m *Manager) Restart(name string) error {
 
 
 func (m *Manager) BroadcastProject(msg ws.Message) {
-	if m.projectHub == nil {
+	if m.setMTRhub == nil {
 		return
 	}
-	m.projectHub.Broadcast(msg)
+	m.setMTRhub.Broadcast(msg)
 }
 
 
-func (m *Manager) SetProjectHub(h *ws.Hub) {
-	m.projectHub = h
+func (m *Manager) SetMTRhub(h *ws.Hub) {
+	m.setMTRhub = h
 }

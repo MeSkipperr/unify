@@ -84,3 +84,10 @@ func LogError(serviceName, msg string) {
 		Message:     msg,
 	})
 }
+func LogWarning(serviceName, msg string) {
+	CreateAppLog(CreateLogParams{
+		Level:       "WARNING",
+		ServiceName: serviceName,
+		Message:     msg,
+	})
+}

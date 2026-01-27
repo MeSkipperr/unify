@@ -1,19 +1,18 @@
 package mtr
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
 	"os/exec"
 )
-
-func Run(cfg Config) ([]byte, error) {
+func Run(cfg Config) (*Result, error) {
 	if cfg.DestHost == "" {
 		return nil, errors.New("DestHost is required")
 	}
 
 	applyDefaults(&cfg)
 
-	// validation
 	if (cfg.Protocol == ProtocolTCP || cfg.Protocol == ProtocolUDP) && cfg.Port == nil {
 		return nil, errors.New("Port is required for tcp/udp")
 	}
@@ -23,10 +22,13 @@ func Run(cfg Config) ([]byte, error) {
 	cmd := exec.Command("mtr", args...)
 	fmt.Println("EXEC:", cmd.String())
 
-	output, err := cmd.Output()
-	if err != nil {
-		return nil, err
+	var stdout, stderr bytes.Buffer
+	cmd.Stdout = &stdout
+	cmd.Stderr = &stderr
+
+	if err := cmd.Run(); err != nil {
+		return nil, fmt.Errorf("mtr failed: %v (%s)", err, stderr.String())
 	}
 
-	return output, nil
+	return ParseResult(stdout.Bytes())
 }

@@ -28,7 +28,8 @@ UNIFY-BACKEND
 
 [ ] MTR
     [X] MTR Function 
-    [ ] Save To database
-    [ ] Send with web socket
+    [X] Save To database
+        [ ] Save Detail Connection
+    [X] Send with web socket
     [ ] APi call
     

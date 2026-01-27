@@ -5,47 +5,145 @@ import (
 	"fmt"
 	"log"
 	"time"
+	"unify-backend/internal/core/dns"
 	"unify-backend/internal/core/mtr"
 	"unify-backend/internal/database"
 	"unify-backend/internal/services"
 	"unify-backend/internal/worker"
+	"unify-backend/internal/ws"
 	"unify-backend/models"
 
 	"gorm.io/gorm"
 )
 
-// func saveMtrResult(db *gorm.DB, sessionID string, out mtr.Result) error {
-// 	// Save the MTR result to the database
-// 	return nil
-// }
+type MTRSessionConfig struct {
+	Interval           int `json:"interval"`
+	RangeReachableLoss int `json:"range_reachable_loss"`
+}
 
-// func updateMtrSessionLastRun(db *gorm.DB, sessionID string, lastRun time.Time) error {
-// 	var session models.MTRSession
-// 	result := db.First(&session, "id = ?", sessionID)
-// 	if result.Error != nil {
-// 		return result.Error
-// 	}
+type mtrSessionParms struct {
+	db      *gorm.DB
+	session models.MTRSession
+	out     mtr.Result
+	config  MTRSessionConfig
+	manager *worker.Manager
+}
 
-// 	// session.LastRunAt = lastRun
-// 	return db.Save(&session).Error
-// }
+func saveMtrResult(data mtrSessionParms) error {
+	// Save the MTR result to the database
+	db := data.db
+	session := data.session
+	out := data.out
 
-// func sendLossConnectionAlert(session models.MTRSession, packetLoss float64) {
-// 	// Implement alerting logic here (e.g., send email or notification)
-// }
+	mtrResult := models.MTRResult{
+		SessionID: session.ID.String(),
 
-// func sendPacketUseWebsocket(session models.MTRSession, out mtr.Result) {
-// 	// Implement WebSocket sending logic here
-// }
+		SourceIP:      out.Hops[0].IP,
+		DestinationIP: session.DestinationIP,
+		Protocol:      session.Protocol,
+		Port:          session.Port,
+		Test:          session.Test,
 
-func startSyncSessionMTRWorker(db *gorm.DB, interval time.Duration) {
-	ticker := time.NewTicker(interval)
+		TotalHops: out.TotalHops,
+		Reachable: out.Reachable,
+		MaxLoss:   out.MaxLoss,
+		AvgRTT:    out.AvgRTT,
+	}
+
+	result := db.Create(&mtrResult)
+	if result.Error != nil {
+		return result.Error
+	}
+
+	for _, hop := range out.Hops {
+
+		mtrHop := models.MTRHop{
+			ResultID:  mtrResult.ID.String(),
+			Hop:       hop.Hop,
+			Host:      hop.IP,
+			Loss:      hop.Loss,
+			Avg:       hop.AvgRTT,
+			IpAddress: hop.IP,
+			DNS:       dns.ReverseDNS(hop.IP)[0],
+		}
+		result = db.Create(&mtrHop)
+		if result.Error != nil {
+			return result.Error
+		}
+	}
+
+	return nil
+}
+
+func updateMtrSessionLastRun(data mtrSessionParms) error {
+	var session models.MTRSession
+	result := data.db.First(&session, "id = ?", data.session.ID)
+	if result.Error != nil {
+		return result.Error
+	}
+
+	now := time.Now()
+
+	session.LastRunAt = &now
+	return data.db.Save(&session).Error
+}
+
+func sendLossConnectionAlert(data mtrSessionParms) {
+	// Implement alerting logic here (e.g., send email or notification)
+	db := data.db
+	session := data.session
+	config := data.config
+
+	var reachableLogs []bool
+
+	err := db.
+		Model(&models.MTRResult{}).
+		Select("reachable").
+		Where("session_id = ?", session.ID).
+		Order("created_at DESC").
+		Limit(config.RangeReachableLoss).
+		Pluck("reachable", &reachableLogs).Error
+
+	if err != nil {
+		log.Println(err)
+	}
+
+	allUnreachable := false
+
+	for _, v := range reachableLogs {
+		if !v {
+			allUnreachable = false
+			break
+		}
+	}
+
+	if allUnreachable {
+		alertMsg := fmt.Sprintf("MTR Session Alert: Destination %s is unreachable for the last %d checks.", session.DestinationIP, config.RangeReachableLoss)
+		services.LogWarning(ServiceMTRSession, alertMsg)
+	}
+}
+
+func sendPacketUseWebsocket(data mtrSessionParms) {
+	// Implement WebSocket sending logic here
+	fmt.Print("SEND WEB SOCKET")
+
+	msg := ws.Message{
+		Time:    time.Now(),
+		ID:      data.session.ID.String(),
+		Message: data.out,
+	}
+
+	data.manager.BroadcastProject(msg)
+}
+
+func startSyncSessionMTRWorker(db *gorm.DB, config MTRSessionConfig, manager *worker.Manager) {
+	ticker := time.NewTicker(time.Duration(config.Interval) * time.Second)
 	defer ticker.Stop()
 
 	for {
 		<-ticker.C
 		var sessions []models.MTRSession
-		result := db.Find(&sessions).Where("enabled = ?", true)
+		result := db.Find(&sessions).Where("status = ?", "active")
 		if result.Error != nil {
 			services.LogError(ServiceMTRSession, "Failed to fetch MTR sessions: "+result.Error.Error())
 			continue
@@ -71,21 +169,31 @@ func startSyncSessionMTRWorker(db *gorm.DB, interval time.Duration) {
 				}
 				log.Println("[MTR RESULT]")
 
-				fmt.Println(string(out))
+				params := mtrSessionParms{
+					db:      db,
+					session: s,
+					config:  config,
+					out:     *out,
+					manager: manager,
+				}
+
+				saveMtrResult(params)
+				updateMtrSessionLastRun(params)
+				sendLossConnectionAlert(params)
+				sendPacketUseWebsocket(params)
+
+				fmt.Println(out)
 			}(session)
 		}
 	}
-}
-
-type MTRSessionConfig struct {
-	Interval int `json:"interval"`
 }
 
 func RunMTRSession(manager *worker.Manager) (*worker.Worker, error) {
 	db := database.DB
 
 	config := MTRSessionConfig{
-		Interval: 10,
+		Interval:           10,
+		RangeReachableLoss: 10,
 	}
 
 	// service, err := services.GetByServiceName(ServiceMTRSession)
@@ -108,7 +216,7 @@ func RunMTRSession(manager *worker.Manager) (*worker.Worker, error) {
 		func() {
 			services.LogInfo(ServiceMTRSession, "Starting MTR Session Session Worker")
 
-			go startSyncSessionMTRWorker(db, time.Duration(config.Interval)*time.Second)
+			go startSyncSessionMTRWorker(db, config, manager)
 		},
 	)
 
