@@ -124,9 +124,7 @@ type portForwardConfig struct {
 func RunPortForwardSession(manager *worker.Manager) (*worker.Worker, error) {
 	db := database.DB
 
-	config := portForwardConfig{
-		SyncInterval:   10,
-	}
+	var config portForwardConfig
 
 	service, err := services.GetByServiceName(ServicePortForward)
 	if err != nil {
