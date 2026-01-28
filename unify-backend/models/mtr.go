@@ -9,7 +9,8 @@ import (
 type MTRSession struct {
 	ID uuid.UUID `gorm:"type:uuid;default:gen_random_uuid();primaryKey"`
 
-	Status string `gorm:"type:varchar(20);not null;index"`
+	Status      string `gorm:"type:varchar(20);not null;index"`
+	IsReachable bool   `gorm:"not null; default:false"`
 
 	CreatedAt time.Time
 
@@ -48,9 +49,9 @@ type MTRHop struct {
 	ID       uuid.UUID `gorm:"type:uuid;default:gen_random_uuid();primaryKey"`
 	ResultID string    `gorm:"type:uuid;index"`
 
-	Hop       int    `gorm:"index"`
-	Host      string `gorm:"type:varchar(255)"`
-	DNS       string `gorm:"type:varchar(255);index"`
+	Hop  int    `gorm:"index"`
+	Host string `gorm:"type:varchar(255)"`
+	DNS  string `gorm:"type:varchar(255);index"`
 
 	Loss   float64
 	Sent   int

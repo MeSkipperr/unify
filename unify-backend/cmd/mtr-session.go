@@ -3,13 +3,17 @@ package cmd
 import (
 	// "errors"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log"
 	"time"
 	"unify-backend/internal/core/dns"
 	"unify-backend/internal/core/mtr"
 	"unify-backend/internal/database"
+	"unify-backend/internal/mailer"
+	"unify-backend/internal/notification"
 	"unify-backend/internal/services"
+	"unify-backend/internal/template/email"
 	"unify-backend/internal/worker"
 	"unify-backend/internal/ws"
 	"unify-backend/models"
@@ -29,6 +33,14 @@ type mtrSessionParms struct {
 	config  MTRSessionConfig
 	manager *worker.Manager
 }
+
+type reachableStatus string
+
+const (
+	UP      reachableStatus = "UP"
+	DOWN    reachableStatus = "DOWN"
+	PARTIAL reachableStatus = "PARTIAL"
+)
 
 func saveMtrResult(data mtrSessionParms) error {
 	// Save the MTR result to the database
@@ -92,7 +104,62 @@ func updateMtrSessionLastRun(data mtrSessionParms) error {
 	return data.db.Save(&session).Error
 }
 
-func sendLossConnectionAlert(data mtrSessionParms) {
+func checkReachable(logs []bool) reachableStatus {
+	allUp := true
+	allDown := true
+
+	for _, v := range logs {
+		if v {
+			allDown = false
+		} else {
+			allUp = false
+		}
+	}
+
+	switch {
+	case allUp:
+		return UP
+	case allDown:
+		return DOWN
+	default:
+		return PARTIAL
+	}
+}
+
+func updateStatusReachableSession(session models.MTRSession, isReachable bool) error {
+	result := database.DB.
+		Model(&models.MTRSession{}).
+		Where("id = ?", session.ID).
+		Update("is_reachable = ?", isReachable)
+
+	if result.Error != nil {
+		return result.Error
+	}
+
+	if result.RowsAffected == 0 {
+		return errors.New("Session Not Found")
+	}
+
+	return nil
+}
+
+func sendConnectionAlertNofication(data mtrSessionParms, isReachable bool) {
+	subject := fmt.Sprintf("[ALERT] Destination %s is reachable ", data.session.DestinationIP)
+	if isReachable {
+		subject = fmt.Sprintf("[ALERT] Destination %s is UNREACHABLE ", data.session.DestinationIP)
+	}
+
+	notification.UserNotificationChannel(mailer.EmailData{
+		Subject: subject,
+		BodyTemplate: email.TraceRouteEmail(email.TraceRouteEmailParms{
+			Session: data.session,
+			Result:  data.out,
+		}, isReachable),
+		FileAttachment: []string{},
+	})
+}
+
+func checkReachableStatus(data mtrSessionParms) {
 	// Implement alerting logic here (e.g., send email or notification)
 	db := data.db
 	session := data.session
@@ -112,25 +179,33 @@ func sendLossConnectionAlert(data mtrSessionParms) {
 		log.Println(err)
 	}
 
-	allUnreachable := false
+	reachableStatus := checkReachable(reachableLogs)
 
-	for _, v := range reachableLogs {
-		if !v {
-			allUnreachable = false
-			break
-		}
+	if reachableStatus == DOWN && session.IsReachable {
+		// Host sekarang DOWN, sebelumnya reachable → warning
+		services.LogWarning(ServiceMTRSession, fmt.Sprintf(
+			"MTR Session Alert: Destination %s (Session ID: %s) is currently UNREACHABLE. Last successful check was at %s.",
+			session.DestinationIP,
+			session.ID,
+			session.LastRunAt.Format("02/01/2006 15:04:05"),
+		))
+		updateStatusReachableSession(session, false)
+		sendConnectionAlertNofication(data, false)
+	} else if reachableStatus == UP && !session.IsReachable {
+		// Host sekarang UP, sebelumnya unreachable → info
+		services.LogInfo(ServiceMTRSession, fmt.Sprintf(
+			"MTR Session Notice: Destination %s (Session ID: %s) is now reachable. Recovery detected at %s.",
+			session.DestinationIP,
+			session.ID,
+			time.Now().Format("02/01/2006 15:04:05"),
+		))
+		updateStatusReachableSession(session, true)
+		sendConnectionAlertNofication(data, true)
 	}
 
-	if allUnreachable {
-		alertMsg := fmt.Sprintf("MTR Session Alert: Destination %s is unreachable for the last %d checks.", session.DestinationIP, config.RangeReachableLoss)
-		services.LogWarning(ServiceMTRSession, alertMsg)
-	}
 }
 
 func sendPacketUseWebsocket(data mtrSessionParms) {
-	// Implement WebSocket sending logic here
-	fmt.Print("SEND WEB SOCKET")
-
 	msg := ws.Message{
 		Time:    time.Now(),
 		ID:      data.session.ID.String(),
@@ -178,7 +253,7 @@ func startSyncSessionMTRWorker(db *gorm.DB, config MTRSessionConfig, manager *wo
 
 			saveMtrResult(params)
 			updateMtrSessionLastRun(params)
-			sendLossConnectionAlert(params)
+			checkReachableStatus(params)
 			sendPacketUseWebsocket(params)
 
 			b, err := json.MarshalIndent(out, "", "  ")
