@@ -2,6 +2,7 @@ package notification
 
 import (
 	"errors"
+	"fmt"
 	"unify-backend/internal/mailer"
 	"unify-backend/internal/services"
 	"unify-backend/models"
@@ -11,6 +12,7 @@ func UserNotificationChannel(data mailer.EmailData) (string, error) {
 	users, err := SelectUserByType([]models.UserRole{
 		models.RoleUser,
 	})
+
 	if err != nil {
 		services.CreateAppLog(services.CreateLogParams{
 			Level:       "ERROR",
@@ -21,15 +23,16 @@ func UserNotificationChannel(data mailer.EmailData) (string, error) {
 	}
 
 	var recipients []mailer.Recipients
-	for _, user := range users {
+	for i, user := range users {
 		if user.Email == nil {
 			continue
 		}
+		fmt.Print(i, user.Email)
 
 		recipients = append(recipients, mailer.Recipients{
 			FirstName: user.FirstName,
 			LastName:  user.LastName,
-			Email:    *user.Email,
+			Email:     *user.Email,
 		})
 	}
 

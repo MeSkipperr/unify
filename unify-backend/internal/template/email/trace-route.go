@@ -33,18 +33,21 @@ func TraceRouteEmail(payload TraceRouteEmailParms, isReachable bool) string {
 		portText = fmt.Sprintf("%d", *session.Port)
 	}
 
+	
+
 	return fmt.Sprintf(`
 Dear {{firstName}} {{lastName}},
 
 %s
 
-- Timestamp       : %s
-- Session ID      : %s
-- Source IP       : %s
-- Destination IP  : %s
-- Protocol        : %s
-- Port            : %s
-- Status          : %s
+- Timestamp : %s
+- Session ID : %s
+- Source IP : %s
+- Destination IP : %s
+- Protocol : %s
+- Port : %s
+- Status : %s
+- Note : %s
 
 %s
 
@@ -59,6 +62,7 @@ Best regards,
 		session.Protocol,
 		portText,
 		status,
+		session.Note,
 		action,
 	)
 }

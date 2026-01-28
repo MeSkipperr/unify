@@ -2,15 +2,18 @@ package worker
 
 import (
 	"errors"
+	"fmt"
 	"sync"
+	"unify-backend/internal/database"
 	"unify-backend/internal/ws"
+	"unify-backend/models"
 )
 
 type Manager struct {
-	mu      sync.RWMutex
-	workers map[string]*Worker
-	status  map[string]Status
-	setMTRhub   *ws.Hub
+	mu        sync.RWMutex
+	workers   map[string]*Worker
+	status    map[string]Status
+	setMTRhub *ws.Hub
 }
 
 func NewManager() *Manager {
@@ -46,15 +49,27 @@ func (m *Manager) SetStatus(name string, status Status) error {
 		return errors.New("service not found")
 	}
 
+	// Jalankan aksi worker
 	switch status {
 	case StatusStarted:
-		return w.Start()
+		if err := w.Start(); err != nil {
+			return err
+		}
 	case StatusStopped:
 		w.Stop()
 	}
-	return nil
 
+	// Update status di DB
+	err := database.DB.Model(&models.Service{}).
+		Where("service_name = ?", name).
+		Update("status", string(status)).Error
+	if err != nil {
+		return fmt.Errorf("failed to update DB status: %w", err)
+	}
+
+	return nil
 }
+
 func (m *Manager) Replace(name string, w *Worker) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
@@ -87,14 +102,12 @@ func (m *Manager) Restart(name string) error {
 	return nil
 }
 
-
 func (m *Manager) BroadcastProject(msg ws.Message) {
 	if m.setMTRhub == nil {
 		return
 	}
 	m.setMTRhub.Broadcast(msg)
 }
-
 
 func (m *Manager) SetMTRhub(h *ws.Hub) {
 	m.setMTRhub = h

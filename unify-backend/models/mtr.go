@@ -24,6 +24,8 @@ type MTRSession struct {
 
 	Test int `gorm:"not null;default:10"`
 
+	Note string `gorm:"type:varchar(500);default:'';comment:'Additional notes'"`
+
 	SendNotification bool `gorm:"not null;default:false"`
 }
 

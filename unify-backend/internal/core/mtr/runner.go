@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"os/exec"
+	"unify-backend/internal/core/dns"
 )
 
 func Run(cfg Config) (*MtrResultJson, error) {
@@ -43,6 +44,10 @@ func Run(cfg Config) (*MtrResultJson, error) {
 			raw.Report.HopResult[len(raw.Report.HopResult)-1].Host == cfg.DestHost
 
 			raw.Report.Result.AvgRTT = raw.Report.HopResult[len(raw.Report.HopResult)-1].Avg
+		
+			for i := 0; i < raw.Report.Result.TotalHops; i++ {
+				raw.Report.HopResult[i].Dns = dns.ReverseDNS(raw.Report.HopResult[i].Host)[0]
+			}
 	}
 
 	return &raw, nil

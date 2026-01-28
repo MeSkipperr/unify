@@ -1,13 +1,11 @@
 package cmd
 
 import (
-	// "errors"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"log"
 	"time"
-	"unify-backend/internal/core/dns"
 	"unify-backend/internal/core/mtr"
 	"unify-backend/internal/database"
 	"unify-backend/internal/mailer"
@@ -22,7 +20,7 @@ import (
 )
 
 type MTRSessionConfig struct {
-	Interval           int `json:"interval"`
+	Cron           string `json:"cron"`
 	RangeReachableLoss int `json:"range_reachable_loss"`
 }
 
@@ -73,7 +71,7 @@ func saveMtrResult(data mtrSessionParms) error {
 			ResultID: mtrResult.ID.String(),
 			Hop:      hop.Count,
 			Host:     hop.Host,
-			DNS:      dns.ReverseDNS(hop.Host)[0],
+			DNS:      hop.Dns,
 			Loss:     hop.Loss,
 			Sent:     hop.Snt,
 			Last:     hop.Last,
@@ -130,7 +128,7 @@ func updateStatusReachableSession(session models.MTRSession, isReachable bool) e
 	result := database.DB.
 		Model(&models.MTRSession{}).
 		Where("id = ?", session.ID).
-		Update("is_reachable = ?", isReachable)
+		Update("is_reachable", isReachable)
 
 	if result.Error != nil {
 		return result.Error
@@ -143,10 +141,10 @@ func updateStatusReachableSession(session models.MTRSession, isReachable bool) e
 	return nil
 }
 
-func sendConnectionAlertNofication(data mtrSessionParms, isReachable bool) {
-	subject := fmt.Sprintf("[ALERT] Destination %s is reachable ", data.session.DestinationIP)
+func sendConnectionAlertNotification(data mtrSessionParms, isReachable bool) {
+	subject := fmt.Sprintf("[ALERT] Destination %s is UNREACHABLE ", data.session.DestinationIP)
 	if isReachable {
-		subject = fmt.Sprintf("[ALERT] Destination %s is UNREACHABLE ", data.session.DestinationIP)
+		subject = fmt.Sprintf("[ALERT] Destination %s is reachable ", data.session.DestinationIP)
 	}
 
 	notification.UserNotificationChannel(mailer.EmailData{
@@ -160,15 +158,13 @@ func sendConnectionAlertNofication(data mtrSessionParms, isReachable bool) {
 }
 
 func checkReachableStatus(data mtrSessionParms) {
-	// Implement alerting logic here (e.g., send email or notification)
 	db := data.db
 	session := data.session
 	config := data.config
 
 	var reachableLogs []bool
 
-	err := db.
-		Model(&models.MTRResult{}).
+	err := db.Model(&models.MTRResult{}).
 		Select("reachable").
 		Where("session_id = ?", session.ID).
 		Order("created_at DESC").
@@ -176,10 +172,12 @@ func checkReachableStatus(data mtrSessionParms) {
 		Pluck("reachable", &reachableLogs).Error
 
 	if err != nil {
-		log.Println(err)
+		log.Println("Error fetching reachable logs:", err)
+		return
 	}
 
 	reachableStatus := checkReachable(reachableLogs)
+	fmt.Printf("[%s] [MTR] Session %s status: %s, logs=%v\n", time.Now().Format("2006-01-02 15:04:05"), session.ID, reachableStatus, reachableLogs)
 
 	if reachableStatus == DOWN && session.IsReachable {
 		// Host sekarang DOWN, sebelumnya reachable → warning
@@ -190,7 +188,7 @@ func checkReachableStatus(data mtrSessionParms) {
 			session.LastRunAt.Format("02/01/2006 15:04:05"),
 		))
 		updateStatusReachableSession(session, false)
-		sendConnectionAlertNofication(data, false)
+		sendConnectionAlertNotification(data, false)
 	} else if reachableStatus == UP && !session.IsReachable {
 		// Host sekarang UP, sebelumnya unreachable → info
 		services.LogInfo(ServiceMTRSession, fmt.Sprintf(
@@ -200,9 +198,8 @@ func checkReachableStatus(data mtrSessionParms) {
 			time.Now().Format("02/01/2006 15:04:05"),
 		))
 		updateStatusReachableSession(session, true)
-		sendConnectionAlertNofication(data, true)
+		sendConnectionAlertNotification(data, true)
 	}
-
 }
 
 func sendPacketUseWebsocket(data mtrSessionParms) {
@@ -256,14 +253,6 @@ func startSyncSessionMTRWorker(db *gorm.DB, config MTRSessionConfig, manager *wo
 			checkReachableStatus(params)
 			sendPacketUseWebsocket(params)
 
-			b, err := json.MarshalIndent(out, "", "  ")
-			if err != nil {
-				log.Println("marshal error:", err)
-				return
-			}
-
-			fmt.Println(string(b))
-
 		}(session)
 	}
 }
@@ -271,28 +260,25 @@ func startSyncSessionMTRWorker(db *gorm.DB, config MTRSessionConfig, manager *wo
 func RunMTRSession(manager *worker.Manager) (*worker.Worker, error) {
 	db := database.DB
 
-	config := MTRSessionConfig{
-		Interval:           10,
-		RangeReachableLoss: 10,
+	var config MTRSessionConfig
+
+	service, err := services.GetByServiceName(ServiceMTRSession)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			log.Println("service mtr-session not found, worker disabled")
+			return nil, nil
+		}
+		return nil, err
 	}
 
-	// service, err := services.GetByServiceName(ServiceMTRSession)
-	// if err != nil {
-	// 	if errors.Is(err, gorm.ErrRecordNotFound) {
-	// 		log.Println("service mtr-session not found, worker disabled")
-	// 		return nil, nil
-	// 	}
-	// 	return nil, err
-	// }
-
-	// err = json.Unmarshal(service.Config, &config)
-	// if err != nil {
-	// 	return nil, err
-	// }
+	err = json.Unmarshal(service.Config, &config)
+	if err != nil {
+		return nil, err
+	}
 
 	w := worker.NewWorker(
 		ServiceMTRSession,
-		"*/10 * * * * *",
+		config.Cron	,
 		func() {
 			services.LogInfo(ServiceMTRSession, "Starting MTR Session Session Worker")
 
@@ -300,6 +286,5 @@ func RunMTRSession(manager *worker.Manager) (*worker.Worker, error) {
 		},
 	)
 
-	// worker manager yang mengontrol lifecycle
 	return w, nil
 }

@@ -29,8 +29,9 @@ UNIFY-BACKEND
 [ ] MTR
     [X] MTR Function 
     [X] Save To database
-        [ ] Save Detail Connection
+        [X] Save Detail Connection
     [X] Send with web socket
     [ ] APi call
     [ ] LOG Print
     
+[ ] TIDY UP LOG SERVICES

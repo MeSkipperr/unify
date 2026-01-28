@@ -43,7 +43,6 @@ func NewHandler(m *worker.Manager) http.Handler {
 	return mux
 }
 
-
 func (h *Handler) router(w http.ResponseWriter, r *http.Request) {
 	if strings.HasSuffix(r.URL.Path, "/status") {
 		h.status(w, r)
@@ -98,10 +97,18 @@ func (h *Handler) status(w http.ResponseWriter, r *http.Request) {
 				}
 				payload.Status = worker.StatusStarted
 			} else {
-				http.Error(w, "restart not supported for this service", http.StatusBadRequest)
-				return
+				err := h.manager.Restart(service)
+				if err != nil {
+					http.Error(w, "restart not supported for this service", http.StatusBadRequest)
+					return
+				}
+				if err := h.manager.SetStatus(service, worker.StatusStarted); err != nil {
+					http.Error(w, err.Error(), http.StatusNotFound)
+					return
+				}
 			}
 
+			payload.Status = worker.StatusRestart
 		default:
 			http.Error(w, "invalid status value", http.StatusBadRequest)
 			return
