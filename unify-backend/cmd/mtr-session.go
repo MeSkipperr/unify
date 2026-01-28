@@ -20,8 +20,8 @@ import (
 )
 
 type MTRSessionConfig struct {
-	Cron           string `json:"cron"`
-	RangeReachableLoss int `json:"range_reachable_loss"`
+	Cron               string `json:"cron"`
+	RangeReachableLoss int    `json:"range_reachable_loss"`
 }
 
 type mtrSessionParms struct {
@@ -166,7 +166,7 @@ func checkReachableStatus(data mtrSessionParms) {
 
 	err := db.Model(&models.MTRResult{}).
 		Select("reachable").
-		Where("session_id = ?", session.ID).
+		Where("session_id = ? AND send_notification = ?", session.ID, true).
 		Order("created_at DESC").
 		Limit(config.RangeReachableLoss).
 		Pluck("reachable", &reachableLogs).Error
@@ -278,7 +278,7 @@ func RunMTRSession(manager *worker.Manager) (*worker.Worker, error) {
 
 	w := worker.NewWorker(
 		ServiceMTRSession,
-		config.Cron	,
+		config.Cron,
 		func() {
 			services.LogInfo(ServiceMTRSession, "Starting MTR Session Session Worker")
 
