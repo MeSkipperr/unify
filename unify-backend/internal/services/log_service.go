@@ -1,9 +1,11 @@
 package services
 
 import (
+	"log"
 	"time"
 	"unify-backend/internal/database"
 	"unify-backend/internal/repository"
+
 	// "unify-backend/internal/services"
 	"unify-backend/models"
 )
@@ -16,6 +18,7 @@ type CreateLogParams struct {
 	Level       string
 	ServiceName string
 	Message     string
+	Timestamp   time.Time
 }
 
 /* =========================
@@ -60,14 +63,18 @@ func (s *LogService) SearchLogs(params SearchLogParams) ([]models.Log, error) {
 	return s.repo.FindLogs(repository.SearchLogParams{})
 }
 
-
 func CreateAppLog(params CreateLogParams) error {
+	log.Print(
+		// "[", params.Timestamp.Format("2006-01-02 15:04:05"), "] ",
+		"[", params.Level, "] ",
+		"[", params.ServiceName, "] ",
+		params.Message,
+	)
 	logRepo := repository.NewLogRepository(database.DB)
 	logService := NewLogService(logRepo)
 
 	return logService.CreateLog(params)
 }
-
 
 func LogInfo(serviceName, msg string) {
 	CreateAppLog(CreateLogParams{
@@ -86,7 +93,7 @@ func LogError(serviceName, msg string) {
 }
 func LogWarning(serviceName, msg string) {
 	CreateAppLog(CreateLogParams{
-		Level:       "WARNING",
+		Level:       "WARN",
 		ServiceName: serviceName,
 		Message:     msg,
 	})
