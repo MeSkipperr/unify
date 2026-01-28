@@ -1,4 +1,0 @@
-{
-    "service": "project1",
-    "cron": "* * * * * *"
-}

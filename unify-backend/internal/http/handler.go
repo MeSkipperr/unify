@@ -6,12 +6,14 @@ import (
 	"strings"
 	"time"
 
-	"unify-backend/internal/services"
+	"unify-backend/cmd"
 	"unify-backend/internal/worker"
+	"unify-backend/internal/ws"
 )
 
 type Handler struct {
 	manager *worker.Manager
+	wsHub   *ws.Hub
 }
 
 type StatusPayload struct {
@@ -25,9 +27,19 @@ type StatusResponse struct {
 }
 
 func NewHandler(m *worker.Manager) http.Handler {
-	h := &Handler{manager: m}
+	h := &Handler{
+		manager: m,
+		wsHub:   ws.NewHub(),
+	}
+
 	mux := http.NewServeMux()
+
+	// existing http
 	mux.HandleFunc("/services/", h.router)
+
+	// NEW: websocket
+	mux.Handle("/ws/services", ws.ServeWS(h.wsHub))
+
 	return mux
 }
 
@@ -78,17 +90,25 @@ func (h *Handler) status(w http.ResponseWriter, r *http.Request) {
 			}
 
 		case worker.StatusRestart:
-			if service == "project1" {
-				if err := RestartProject1(h.manager); err != nil {
+			if service == cmd.ServiceMonitoringNetwork {
+				if err := RestartMonitoringNetwork(h.manager); err != nil {
 					http.Error(w, err.Error(), http.StatusInternalServerError)
 					return
 				}
 				payload.Status = worker.StatusStarted
 			} else {
-				http.Error(w, "restart not supported for this service", http.StatusBadRequest)
-				return
+				err := h.manager.Restart(service)
+				if err != nil {
+					http.Error(w, "restart not supported for this service", http.StatusBadRequest)
+					return
+				}
+				if err := h.manager.SetStatus(service, worker.StatusStarted); err != nil {
+					http.Error(w, err.Error(), http.StatusNotFound)
+					return
+				}
 			}
 
+			payload.Status = worker.StatusRestart
 		default:
 			http.Error(w, "invalid status value", http.StatusBadRequest)
 			return
@@ -103,18 +123,18 @@ func (h *Handler) status(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func RestartProject1(manager *worker.Manager) error {
-	w, err := services.Project1Worker() // baca config terbaru
+func RestartMonitoringNetwork(manager *worker.Manager) error {
+	w, err := cmd.MonitoringNetwork(manager)
 	if err != nil {
 		return err
 	}
 
-	old, _ := manager.Get("project1")
+	old, _ := manager.Get(cmd.ServiceMonitoringNetwork)
 	old.Stop()
 
-	manager.Replace("project1", w)
+	manager.Replace(cmd.ServiceMonitoringNetwork, w)
 	w.Start()
-	manager.SetStatus("project1", worker.StatusStarted)
+	manager.SetStatus(cmd.ServiceMonitoringNetwork, worker.StatusStarted)
 
 	return nil
 }

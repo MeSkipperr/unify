@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>WebSocket Client – Project</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        background: #0f172a;
+        color: #e5e7eb;
+        padding: 20px;
+      }
+
+      h1 {
+        font-size: 20px;
+        margin-bottom: 10px;
+      }
+
+      button {
+        padding: 10px 16px;
+        border: none;
+        border-radius: 6px;
+        background: #2563eb;
+        color: white;
+        cursor: pointer;
+        margin-right: 8px;
+      }
+
+      button:disabled {
+        background: #475569;
+        cursor: not-allowed;
+      }
+
+      #log {
+        margin-top: 15px;
+        background: #020617;
+        padding: 10px;
+        border-radius: 6px;
+        height: 300px;
+        overflow-y: auto;
+        font-size: 13px;
+        white-space: pre-wrap;
+      }
+
+      .connected {
+        color: #22c55e;
+      }
+
+      .disconnected {
+        color: #ef4444;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>WebSocket Client – /ws/project</h1>
+
+    <button id="btnConnect">Join WS</button>
+    <button id="btnDisconnect" disabled>Disconnect</button>
+
+    <div id="status" class="disconnected">● Disconnected</div>
+
+    <div id="log"></div>
+
+    <script>
+      let ws = null;
+
+      const btnConnect = document.getElementById("btnConnect");
+      const btnDisconnect = document.getElementById("btnDisconnect");
+      const log = document.getElementById("log");
+      const status = document.getElementById("status");
+
+      function writeLog(message) {
+        const time = new Date().toLocaleTimeString();
+        log.textContent += `[${time}] ${message}\n`;
+        log.scrollTop = log.scrollHeight;
+      }
+
+      btnConnect.onclick = () => {
+        if (ws) return;
+
+        ws = new WebSocket("ws://localhost:8080/ws/mtr");
+
+        ws.onopen = () => {
+          writeLog("Connected to WebSocket");
+          status.textContent = "● Connected";
+          status.className = "connected";
+          btnConnect.disabled = true;
+          btnDisconnect.disabled = false;
+        };
+
+        ws.onmessage = (event) => {
+          try {
+            const data = JSON.parse(event.data);
+            writeLog("Message:\n" + JSON.stringify(data, null, 2));
+          } catch {
+            writeLog("Raw message: " + event.data);
+          }
+        };
+
+        ws.onmessage = e => {
+  console.log("LOG:", JSON.parse(e.data))
+}
+
+        ws.onerror = (err) => {
+          writeLog("WebSocket error");
+          console.error(err);
+        };
+
+        ws.onclose = () => {
+          writeLog("Disconnected");
+          status.textContent = "● Disconnected";
+          status.className = "disconnected";
+          btnConnect.disabled = false;
+          btnDisconnect.disabled = true;
+          ws = null;
+        };
+      };
+
+      btnDisconnect.onclick = () => {
+        if (ws) ws.close();
+      };
+    </script>
+  </body>
+</html>

@@ -3,23 +3,51 @@ package main
 import (
 	"log"
 	"net/http"
-
+	"unify-backend/cmd"
+	"unify-backend/config"
+	"unify-backend/internal/database"
 	api "unify-backend/internal/http"
-	"unify-backend/internal/services"
 	"unify-backend/internal/worker"
+	"unify-backend/internal/ws"
+
+	"github.com/joho/godotenv"
+	_ "github.com/lib/pq"
 )
 
 func main() {
-	manager := worker.NewManager()
-	w, err := services.Project1Worker()
+	err := godotenv.Load("../.env")
 	if err != nil {
-		log.Fatal(err)
+		log.Fatal("Error loading .env file")
+	}
+	database.Connect()
+	database.Migrate()
+
+	manager := worker.NewManager()
+
+	errs := worker.RegisterWorkersContinue(manager, []worker.WorkerFactory{
+		cmd.MonitoringNetwork,
+		cmd.RemoveDataYoutubeADB,
+		cmd.GetUptimeADB,
+		cmd.GetSpeedtestNetwork,
+		cmd.RunPortForwardSession,
+		cmd.RunMTRSession,
+	})
+
+	for _, err := range errs {
+		log.Println("worker error:", err)
 	}
 
-	manager.Register(w)
+	mux := http.NewServeMux()
+	apiHandler := api.NewHandler(manager)
+	mux.Handle("/", apiHandler)
 
-	handler := api.NewHandler(manager)
+	mtrSocket := ws.NewHub()
+	manager.SetMTRhub(mtrSocket)
 
-	log.Println("server running on :8080")
-	http.ListenAndServe(":8080", handler)
+	mux.Handle("/ws/mtr", ws.ServeWS(mtrSocket))
+
+	log.Println("server running on port", config.ServerPort)
+	if err := http.ListenAndServe(config.ServerPort, mux); err != nil {
+		log.Fatal(err)
+	}
 }
