@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"log"
 	"strconv"
 	"strings"
 	"time"
@@ -55,7 +54,7 @@ type getUptimeConfig struct {
 func GetUptimeADB(manager *worker.Manager) (*worker.Worker, error) {
 	adbConfig, err := adb.LoadADBConfig("internal/adb/adb.linux.json")
 	if err != nil {
-		log.Fatal(err)
+		services.LogError(ServiceGetUptimeADB, "Failed to load ADB config: "+err.Error())
 		return nil, err
 	}
 
@@ -64,7 +63,7 @@ func GetUptimeADB(manager *worker.Manager) (*worker.Worker, error) {
 	service, err := services.GetByServiceName(ServiceGetUptimeADB)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			log.Println("service get-uptime-adb not found, worker disabled")
+			services.LogInfo(ServiceGetUptimeADB, "service get-uptime-adb not found, worker disabled")
 			return nil, nil
 		}
 		return nil, err
@@ -89,7 +88,7 @@ func GetUptimeADB(manager *worker.Manager) (*worker.Worker, error) {
 
 			devices, err := selectDevicesByTypes(types)
 			if err != nil {
-				log.Println("Error selecting devices:", err)
+				services.LogError(ServiceGetUptimeADB, "Error selecting devices: "+err.Error())
 				return
 			}
 
@@ -114,7 +113,6 @@ func GetUptimeADB(manager *worker.Manager) (*worker.Worker, error) {
 			for i := 0; i < adbConfig.VerificationSteps; i++ {
 				err = adb.RestartADBServer(adbConfig.ADBPath)
 				if err != nil {
-					log.Println("Error restarting ADB server:", err)
 					services.LogError(ServiceGetUptimeADB, "Error restarting ADB server: "+err.Error())
 					return
 				}

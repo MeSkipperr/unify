@@ -23,7 +23,6 @@ func Run(cfg Config) (*MtrResultJson, error) {
 	args := buildArgs(cfg)
 
 	cmd := exec.Command("mtr", args...)
-	fmt.Println("EXEC:", cmd.String())
 
 	var stdout, stderr bytes.Buffer
 	cmd.Stdout = &stdout

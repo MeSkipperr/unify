@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"log"
 	"time"
 	"unify-backend/internal/core/mtr"
 	"unify-backend/internal/database"
@@ -172,12 +171,11 @@ func checkReachableStatus(data mtrSessionParms) {
 		Pluck("reachable", &reachableLogs).Error
 
 	if err != nil {
-		log.Println("Error fetching reachable logs:", err)
+		services.LogError(ServiceMTRSession, "Failed to fetch reachable logs: "+err.Error())
 		return
 	}
 
 	reachableStatus := checkReachable(reachableLogs)
-	fmt.Printf("[%s] [MTR] Session %s status: %s, logs=%v\n", time.Now().Format("2006-01-02 15:04:05"), session.ID, reachableStatus, reachableLogs)
 
 	if reachableStatus == DOWN && session.IsReachable {
 		// Host sekarang DOWN, sebelumnya reachable → warning
@@ -238,8 +236,6 @@ func startSyncSessionMTRWorker(db *gorm.DB, config MTRSessionConfig, manager *wo
 				services.LogError(ServiceMTRSession, "MTR run failed for session ID "+s.ID.String()+": "+err.Error())
 				return
 			}
-			log.Println("[MTR RESULT]")
-
 			params := mtrSessionParms{
 				db:      db,
 				session: s,
@@ -248,11 +244,19 @@ func startSyncSessionMTRWorker(db *gorm.DB, config MTRSessionConfig, manager *wo
 				manager: manager,
 			}
 
-			saveMtrResult(params)
-			updateMtrSessionLastRun(params)
+			err = saveMtrResult(params)
+			if err != nil {
+				services.LogError(ServiceMTRSession, "Failed to save MTR result for session ID "+s.ID.String()+": "+err.Error())
+				return
+			}
+			
+			err = updateMtrSessionLastRun(params)
+			if err != nil {
+				services.LogError(ServiceMTRSession, "Failed to update last run for session ID "+s.ID.String()+": "+err.Error())
+				return
+			}
 			checkReachableStatus(params)
 			sendPacketUseWebsocket(params)
-
 		}(session)
 	}
 }
@@ -265,7 +269,7 @@ func RunMTRSession(manager *worker.Manager) (*worker.Worker, error) {
 	service, err := services.GetByServiceName(ServiceMTRSession)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			log.Println("service mtr-session not found, worker disabled")
+			services.LogInfo(ServiceMTRSession, "service mtr-session not found, worker disabled")
 			return nil, nil
 		}
 		return nil, err

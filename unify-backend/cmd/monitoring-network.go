@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"log"
 	"time"
 	"unify-backend/internal/core/arp"
 	"unify-backend/internal/core/port"
@@ -196,7 +195,7 @@ func MonitoringNetwork(manager *worker.Manager) (*worker.Worker, error) {
 			for {
 				devices, err := selectDevicesByTypes(types)
 				if err != nil {
-					log.Println("Error selecting devices:", err)
+					services.LogError(ServiceMonitoringNetwork, "Error selecting devices: "+err.Error())
 					return
 				}
 

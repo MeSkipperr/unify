@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"log"
 	"os"
 	"time"
 	"unify-backend/internal/core/iptables"
@@ -124,12 +123,14 @@ type portForwardConfig struct {
 func RunPortForwardSession(manager *worker.Manager) (*worker.Worker, error) {
 	db := database.DB
 
-	var config portForwardConfig
+	config := portForwardConfig{
+		SyncInterval:   10,
+	}
 
 	service, err := services.GetByServiceName(ServicePortForward)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			log.Println("service port-forward not found, worker disabled")
+			services.LogInfo(ServicePortForward, "service port-forward not found, worker disabled")
 			return nil, nil
 		}
 		return nil, err
@@ -157,13 +158,11 @@ func RunPortForwardSession(manager *worker.Manager) (*worker.Worker, error) {
 
 			// 1. CLEAN
 			if err := iptables.CleanupAllPortForwardRules(db, chain); err != nil {
-				log.Println("cleanup failed:", err)
 				services.LogError(ServicePortForward, "Error Clean Up ip tables : "+err.Error())
 			}
 
 			// 2. REBUILD
 			if err := iptables.RebuildActivePortForward(db); err != nil {
-				log.Println("rebuild failed:", err)
 				services.LogError(ServicePortForward, "Error Rebuild ip tables : "+err.Error())
 			}
 

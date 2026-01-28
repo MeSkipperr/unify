@@ -3,7 +3,6 @@ package cmd
 import (
 	"encoding/json"
 	"errors"
-	"log"
 	"time"
 	"unify-backend/internal/core/ip"
 	"unify-backend/internal/database"
@@ -35,7 +34,7 @@ func GetSpeedtestNetwork(manager *worker.Manager) (*worker.Worker, error) {
 	service, err := services.GetByServiceName(ServiceGetSpeedtestNetwork)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			log.Println("service get-speedtest-network not found, worker disabled")
+			services.LogInfo(ServiceGetSpeedtestNetwork, "service get-speedtest-network not found, worker disabled")
 			return nil, nil
 		}
 		return nil, err
