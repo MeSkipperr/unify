@@ -15,7 +15,8 @@ import Link from 'next/link';
 
 
 export default function AppSidebar() {
-    const propery = process.env.NEXT_PUBLIC_PROPERTY;
+    const property = process.env.NEXT_PUBLIC_PROPERTY;
+    const date = new Date(); 
     return (
         <Sidebar  >
             <SidebarContent className='bg-background'>
@@ -142,7 +143,7 @@ export default function AppSidebar() {
 
             <SidebarFooter className="text-sm text-muted-foreground bg-background border-t">
 
-                {propery} © Unify
+                {property} © Unify {date.getFullYear()}
             </SidebarFooter>
         </Sidebar>
     )
