@@ -1,144 +1,78 @@
 "use client"
 
-import * as React from "react"
-import {
-    flexRender,
-    getCoreRowModel,
-    getFilteredRowModel,
-    getPaginationRowModel,
-    useReactTable,
-    type ColumnFiltersState,
-    type SortingState,
-    type VisibilityState,
-} from "@tanstack/react-table"
+import { FilterConfig } from "@/components/filter/types"
+import DeviceTable from "@/features/device/table"
+import { Device } from "@/features/device/types"
 
-import {
-    Table,
-    TableBody,
-    TableCell,
-    TableHead,
-    TableHeader,
-    TableRow,
-} from "@/components/ui/table"
-import {
-    DropdownMenu,
-    DropdownMenuCheckboxItem,
-    DropdownMenuContent,
-    DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
-import { Button } from "@/components/ui/button"
-import { ChevronDown } from "lucide-react"
-import { Device } from "./data-table"
-import { columns } from "./columns"
+
 
 const data: Device[] = [
-    { id: "1", name: "Access Point Lobby", ipAddress: "192.168.1.10" },
-    { id: "2", name: "CCTV Gate", ipAddress: "192.168.1.20" },
+    {
+        id: "1",
+        name: "Access Point Lobby",
+        ipAddress: "192.168.1.10",
+        macAddress: "00:00:00:00:00:00",
+        roomNumber: "1001",
+        isConnect: true,
+        type: "access-point",
+        statusUpdatedAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000),
+        notification: false,
+        description: "Server: NVR4,Channel: 29,Coverage: C-108 Room 3208 - 3201,Distribution: In Front of Room 3207 & 3208 pointed to Elevator LP-03"
+    },
+    {
+        id: "2",
+        name: "CCTV Gate",
+        ipAddress: "192.168.1.20",
+        macAddress: "00:00:00:00:00:00",
+        roomNumber: "1002",
+        isConnect: false,
+        type: "cctv",
+        notification: true,
+        statusUpdatedAt: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000),
+    },
 ]
 
+const dataFilter: FilterConfig[] = [
+    {
+        key: "status",
+        label: "Status",
+        type: "boolean",
+        isEnabled: true,
+        options: [
+            { value: false, label: "DOWN", isSelected: false },
+            { value: true, label: "UP", isSelected: false },
+        ],
+    },
+    {
+        key: "notification",
+        label: "Notification",
+        type: "boolean",
+        isEnabled: true,
+        options: [
+            { value: false, label: "Off", isSelected: true },
+            { value: true, label: "On", isSelected: false },
+        ],
+    },
+    {
+        key: "type",
+        label: "Types",
+        type: "select",
+        isEnabled: true,
+        options: [
+            { value: "cctv", label: "CCTV", isSelected: false },
+            { value: "iptv", label: "IPTV", isSelected: true },
+            { value: "access-point", label: "Access Point", isSelected: false },
+            { value: "sw", label: "Switch", isSelected: true },
+        ],
+    },
+]
 
-export default function DeviceTable() {
-    const [sorting, setSorting] = React.useState<SortingState>([])
-    const [columnFilters, setColumnFilters] =
-        React.useState<ColumnFiltersState>([])
-    const [columnVisibility, setColumnVisibility] =
-        React.useState<VisibilityState>({})
-    const [rowSelection, setRowSelection] = React.useState({})
-
-    const table = useReactTable({
-        data,
-        columns,
-        state: {
-            sorting,
-            columnFilters,
-            columnVisibility,
-            rowSelection,
-        },
-        onSortingChange: setSorting,
-        onColumnFiltersChange: setColumnFilters,
-        onColumnVisibilityChange: setColumnVisibility,
-        onRowSelectionChange: setRowSelection,
-        getCoreRowModel: getCoreRowModel(),
-        getPaginationRowModel: getPaginationRowModel(),
-        getFilteredRowModel: getFilteredRowModel(),
-    })
+export default function Table() {
 
     return (
         <div className="w-full space-y-4">
-            {/* Columns Button */}
-            <div className="flex justify-end">
-                <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                        <Button variant="outline">
-                            Columns <ChevronDown />
-                        </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                        {table
-                            .getAllColumns()
-                            .filter((column) => column.getCanHide())
-                            .map((column) => (
-                                <DropdownMenuCheckboxItem
-                                    key={column.id}
-                                    checked={column.getIsVisible()}
-                                    onCheckedChange={(value) =>
-                                        column.toggleVisibility(!!value)
-                                    }
-                                    className="capitalize"
-                                >
-                                    {column.id}
-                                </DropdownMenuCheckboxItem>
-                            ))}
-                    </DropdownMenuContent>
-                </DropdownMenu>
-            </div>
 
-            {/* Table */}
-            <div className="rounded-md border">
-                <Table>
-                    <TableHeader className="bg-secondary">
-                        {table.getHeaderGroups().map((group) => (
-                            <TableRow key={group.id}>
-                                {group.headers.map((header) => (
-                                    <TableHead key={header.id}>
-                                        {header.isPlaceholder
-                                            ? null
-                                            : flexRender(
-                                                header.column.columnDef.header,
-                                                header.getContext()
-                                            )}
-                                    </TableHead>
-                                ))}
-                            </TableRow>
-                        ))}
-                    </TableHeader>
-                    <TableBody>
-                        {table.getRowModel().rows.length ? (
-                            table.getRowModel().rows.map((row) => (
-                                <TableRow
-                                    key={row.id}
-                                    data-state={row.getIsSelected() && "selected"}
-                                >
-                                    {row.getVisibleCells().map((cell) => (
-                                        <TableCell key={cell.id}>
-                                            {flexRender(
-                                                cell.column.columnDef.cell,
-                                                cell.getContext()
-                                            )}
-                                        </TableCell>
-                                    ))}
-                                </TableRow>
-                            ))
-                        ) : (
-                            <TableRow>
-                                <TableCell colSpan={columns.length} className="h-24 text-center">
-                                    No results.
-                                </TableCell>
-                            </TableRow>
-                        )}
-                    </TableBody>
-                </Table>
-            </div>
+            <DeviceTable data={data} />
         </div>
     )
 }

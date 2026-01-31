@@ -3,7 +3,7 @@
 
 import { Bell, LogOut, User } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import { SidebarTrigger } from '@/components/ui/sidebar'
 import { ModeToggle } from './mode-toggle'
 
@@ -41,6 +41,7 @@ export default function AppNavbar() {
                         </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
+                        <DropdownMenuLabel>admin</DropdownMenuLabel>
                         <DropdownMenuItem className="text-destructive hover:cursor-pointer">
                             <LogOut className="mr-2 h-4 w-4" /> Logout
                         </DropdownMenuItem>
