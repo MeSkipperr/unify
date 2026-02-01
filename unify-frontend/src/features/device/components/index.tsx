@@ -78,7 +78,6 @@ const DeviceTableData = () => {
             setData(result)
         } catch (err) {
             console.table(err)
-            // console.error(err)
         } finally {
             setIsLoading(false)
         }
