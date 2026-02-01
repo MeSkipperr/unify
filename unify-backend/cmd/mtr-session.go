@@ -141,6 +141,9 @@ func updateStatusReachableSession(session models.MTRSession, isReachable bool) e
 }
 
 func sendConnectionAlertNotification(data mtrSessionParms, isReachable bool) {
+	if data.session.SendNotification == false {
+		return
+	}
 	subject := fmt.Sprintf("[ALERT] Destination %s is UNREACHABLE ", data.session.DestinationIP)
 	if isReachable {
 		subject = fmt.Sprintf("[ALERT] Destination %s is reachable ", data.session.DestinationIP)
@@ -165,7 +168,7 @@ func checkReachableStatus(data mtrSessionParms) {
 
 	err := db.Model(&models.MTRResult{}).
 		Select("reachable").
-		Where("session_id = ? AND send_notification = ?", session.ID, true).
+		Where("session_id = ?", session.ID).
 		Order("created_at DESC").
 		Limit(config.RangeReachableLoss).
 		Pluck("reachable", &reachableLogs).Error
