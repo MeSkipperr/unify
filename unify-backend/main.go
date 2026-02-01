@@ -10,6 +10,7 @@ import (
 	"unify-backend/internal/worker"
 	"unify-backend/internal/ws"
 
+	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
 	_ "github.com/lib/pq"
 )
@@ -37,17 +38,23 @@ func main() {
 		log.Println("worker error:", err)
 	}
 
-	mux := http.NewServeMux()
+	router := gin.Default()
 	apiHandler := api.NewHandler(manager)
-	mux.Handle("/", apiHandler)
 
 	mtrSocket := ws.NewHub()
 	manager.SetMTRhub(mtrSocket)
 
-	mux.Handle("/ws/mtr", ws.ServeWS(mtrSocket))
+	router.GET("/ws/mtr", func(c *gin.Context) {
+		ws.ServeWS(mtrSocket).ServeHTTP(c.Writer, c.Request)
+	})
 
-	log.Println("server running on port", config.ServerPort)
-	if err := http.ListenAndServe(config.ServerPort, mux); err != nil {
+	server := &http.Server{
+		Addr:    config.ServerPort,
+		Handler: apiHandler,
+	}
+
+	log.Println("Server running at: ", config.ServerPort)
+	if err := server.ListenAndServe(); err != nil {
 		log.Fatal(err)
 	}
 }

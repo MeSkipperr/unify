@@ -1,10 +1,10 @@
 package http
 
 import (
-	"encoding/json"
 	"net/http"
-	"strings"
 	"time"
+
+	"github.com/gin-gonic/gin"
 
 	"unify-backend/cmd"
 	"unify-backend/internal/worker"
@@ -26,101 +26,85 @@ type StatusResponse struct {
 	At      time.Time     `json:"at"`
 }
 
-func NewHandler(m *worker.Manager) http.Handler {
+func NewHandler(m *worker.Manager) *gin.Engine {
 	h := &Handler{
 		manager: m,
 		wsHub:   ws.NewHub(),
 	}
 
-	mux := http.NewServeMux()
+	router := gin.Default()
 
-	// existing http
-	mux.HandleFunc("/services/", h.router)
+	// Existing HTTP endpoints
+	router.GET("/services/:service/status", h.getStatus)
+	router.PUT("/services/:service/status", h.updateStatus)
 
-	// NEW: websocket
-	mux.Handle("/ws/services", ws.ServeWS(h.wsHub))
+	// Websocket
+	router.GET("/ws/services", func(c *gin.Context) {
+		ws.ServeWS(h.wsHub).ServeHTTP(c.Writer, c.Request)
+	})
 
-	return mux
+	return router
 }
 
-func (h *Handler) router(w http.ResponseWriter, r *http.Request) {
-	if strings.HasSuffix(r.URL.Path, "/status") {
-		h.status(w, r)
-		return
-	}
-	http.NotFound(w, r)
-}
-
-func (h *Handler) status(w http.ResponseWriter, r *http.Request) {
-	parts := strings.Split(r.URL.Path, "/")
-	if len(parts) < 4 {
-		http.Error(w, "invalid path", http.StatusBadRequest)
+// GET /services/:service/status
+func (h *Handler) getStatus(c *gin.Context) {
+	service := c.Param("service")
+	status, ok := h.manager.Status(service)
+	if !ok {
+		c.JSON(http.StatusNotFound, gin.H{"error": "service not found"})
 		return
 	}
 
-	service := parts[2]
+	c.JSON(http.StatusOK, StatusResponse{
+		Service: service,
+		Status:  status,
+		At:      time.Now(),
+	})
+}
 
-	switch r.Method {
+// PUT /services/:service/status
+func (h *Handler) updateStatus(c *gin.Context) {
+	service := c.Param("service")
+	var payload StatusPayload
+	if err := c.ShouldBindJSON(&payload); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid payload"})
+		return
+	}
 
-	case http.MethodGet:
-		status, ok := h.manager.Status(service)
-		if !ok {
-			http.Error(w, "service not found", http.StatusNotFound)
+	switch payload.Status {
+	case worker.StatusStarted, worker.StatusStopped:
+		if err := h.manager.SetStatus(service, payload.Status); err != nil {
+			c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
 			return
 		}
-
-		json.NewEncoder(w).Encode(StatusResponse{
-			Service: service,
-			Status:  status,
-			At:      time.Now(),
-		})
-
-	case http.MethodPut:
-		var payload StatusPayload
-		if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
-			http.Error(w, "invalid payload", http.StatusBadRequest)
-			return
-		}
-
-		switch payload.Status {
-		case worker.StatusStarted, worker.StatusStopped:
-			if err := h.manager.SetStatus(service, payload.Status); err != nil {
-				http.Error(w, err.Error(), http.StatusNotFound)
+	case worker.StatusRestart:
+		if service == cmd.ServiceMonitoringNetwork {
+			if err := RestartMonitoringNetwork(h.manager); err != nil {
+				c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 				return
 			}
-
-		case worker.StatusRestart:
-			if service == cmd.ServiceMonitoringNetwork {
-				if err := RestartMonitoringNetwork(h.manager); err != nil {
-					http.Error(w, err.Error(), http.StatusInternalServerError)
-					return
-				}
-				payload.Status = worker.StatusStarted
-			} else {
-				err := h.manager.Restart(service)
-				if err != nil {
-					http.Error(w, "restart not supported for this service", http.StatusBadRequest)
-					return
-				}
-				if err := h.manager.SetStatus(service, worker.StatusStarted); err != nil {
-					http.Error(w, err.Error(), http.StatusNotFound)
-					return
-				}
+			payload.Status = worker.StatusStarted
+		} else {
+			if err := h.manager.Restart(service); err != nil {
+				c.JSON(http.StatusBadRequest, gin.H{"error": "restart not supported for this service"})
+				return
 			}
-
+			if err := h.manager.SetStatus(service, worker.StatusStarted); err != nil {
+				c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
+				return
+			}
 			payload.Status = worker.StatusRestart
-		default:
-			http.Error(w, "invalid status value", http.StatusBadRequest)
-			return
 		}
-
-		json.NewEncoder(w).Encode(StatusResponse{
-			Service: service,
-			Status:  payload.Status,
-			At:      time.Now(),
-		})
-
+	default:
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid status value"})
+		return
 	}
+
+	c.JSON(http.StatusOK, StatusResponse{
+		Service: service,
+		Status:  payload.Status,
+		At:      time.Now(),
+	})
 }
 
 func RestartMonitoringNetwork(manager *worker.Manager) error {
