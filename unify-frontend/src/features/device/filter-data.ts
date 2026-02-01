@@ -1,11 +1,12 @@
 import { FilterConfig } from "@/components/filter/types";
+import { SortBy } from "@/components/sort/types";
 
 export const dataFilter: FilterConfig[] = [
     {
         key: "status",
         label: "Status",
         type: "boolean",
-        isEnabled: true,
+        isEnabled: false,
         options: [
             { value: false, label: "DOWN", isSelected: false },
             { value: true, label: "UP", isSelected: false },
@@ -15,9 +16,9 @@ export const dataFilter: FilterConfig[] = [
         key: "notification",
         label: "Notification",
         type: "boolean",
-        isEnabled: true,
+        isEnabled: false,
         options: [
-            { value: false, label: "Off", isSelected: true },
+            { value: false, label: "Off", isSelected: false },
             { value: true, label: "On", isSelected: false },
         ],
     },
@@ -25,12 +26,18 @@ export const dataFilter: FilterConfig[] = [
         key: "type",
         label: "Types",
         type: "select",
-        isEnabled: true,
+        isEnabled: false,
         options: [
             { value: "cctv", label: "CCTV", isSelected: false },
-            { value: "iptv", label: "IPTV", isSelected: true },
+            { value: "iptv", label: "IPTV", isSelected: false },
             { value: "access-point", label: "Access Point", isSelected: false },
-            { value: "sw", label: "Switch", isSelected: true },
+            { value: "sw", label: "Switch", isSelected: false },
         ],
     },
+]
+
+export const sortData: SortBy[] = [
+    { key: "roomNumber", label: "Room Number", value: "none" },
+    { key: "lastUpdate", label: "Last Update", value: "none" },
+    { key: "index", label: "Index", value: "none" },
 ]

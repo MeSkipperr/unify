@@ -1,4 +1,4 @@
-import DeviceTableData from "@/features/device";
+import DeviceTableData from "@/features/device/components";
 import { Device } from "@/features/device/types";
 
 const data: Device[] = [

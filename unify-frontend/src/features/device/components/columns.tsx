@@ -3,10 +3,10 @@
 
 import { ColumnDef } from '@tanstack/react-table'
 import { Button } from '@/components/ui/button'
-import { Bell, BellOff, EllipsisVertical } from 'lucide-react'
-import { Device } from './types'
+import { EllipsisVertical } from 'lucide-react'
+import { Device } from '../types'
 import { DeviceStatus } from '@/components/status'
-import { formatDateTime, getCompactRelativeTime } from '@/components/utils/time'
+import { formatDateTime, getCompactRelativeTime } from '@/utils/time'
 
 import {
     Sheet,
@@ -18,15 +18,7 @@ import {
     SheetTitle,
     SheetTrigger,
 } from "@/components/ui/sheet"
-import {
-    Field,
-    FieldDescription,
-    FieldGroup,
-    FieldLabel,
-    FieldLegend,
-    FieldSeparator,
-    FieldSet,
-} from "@/components/ui/field"
+
 import {
     AlertDialog,
     AlertDialogAction,
@@ -50,6 +42,9 @@ import { Label } from '@radix-ui/react-label'
 import Link from 'next/link'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
+
+
+import { NotificationToggle } from './notification-toogle'
 
 export const columns: ColumnDef<Device>[] = [
     {
@@ -95,13 +90,10 @@ export const columns: ColumnDef<Device>[] = [
         accessorKey: 'notification',
         header: 'Notification',
         cell: ({ row }) => (
-            <Button variant="ghost" size="icon">
-                {row.original.notification ? (
-                    <Bell className="size-4" />
-                ) : (
-                    <BellOff className="size-4" />
-                )}
-            </Button>
+            <NotificationToggle
+                deviceId={row.original.id}
+                initialNotification={row.original.notification}
+            />
         )
     },
     {
@@ -131,7 +123,7 @@ export const columns: ColumnDef<Device>[] = [
                                     Detailed information about the selected network device.
                                 </SheetDescription>
                                 <SheetDescription className='text-primary'>
-                                    Last Update {formatDateTime(row.original.statusUpdatedAt)}
+                                    Last status update {formatDateTime(row.original.statusUpdatedAt)}
                                 </SheetDescription>
                             </SheetHeader>
 

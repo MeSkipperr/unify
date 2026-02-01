@@ -1,5 +1,4 @@
 "use client"
-import * as React from "react"
 import { FilterConfig, OptionValue } from "./types"
 import FilterDropdown from "./filter-dropdown"
 import FilterToggleMenu from "./filter-toggle-menu"
@@ -9,9 +8,14 @@ type FilterGroupProps = {
     onChange?: (filters: FilterConfig[]) => void
 }
 
-
 const FilterGroup = ({ data, onChange }: FilterGroupProps) => {
-    const [filterData, setFilterData] = React.useState<FilterConfig[]>(data)
+
+    const updateFilters = (
+        updater: (prev: FilterConfig[]) => FilterConfig[]
+    ) => {
+        if (!onChange) return
+        onChange(updater(data))
+    }
 
     const toggleOption = (filterKey: string, optionValue: OptionValue) => {
         updateFilters((prev) =>
@@ -30,7 +34,6 @@ const FilterGroup = ({ data, onChange }: FilterGroupProps) => {
         )
     }
 
-
     const toggleFilter = (filterKey: string) => {
         updateFilters((prev) =>
             prev.map((filter) =>
@@ -41,21 +44,9 @@ const FilterGroup = ({ data, onChange }: FilterGroupProps) => {
         )
     }
 
-
-    const updateFilters = (
-        updater: (prev: FilterConfig[]) => FilterConfig[]
-    ) => {
-        setFilterData((prev) => {
-            const next = updater(prev)
-            onChange?.(next)
-            return next
-        })
-    }
-
-
     return (
         <div className="flex gap-4">
-            {filterData
+            {data
                 .filter((f) => f.isEnabled)
                 .map((filter) => (
                     <FilterDropdown
@@ -66,7 +57,7 @@ const FilterGroup = ({ data, onChange }: FilterGroupProps) => {
                 ))}
 
             <FilterToggleMenu
-                filters={filterData}
+                filters={data}
                 onToggleFilter={toggleFilter}
             />
         </div>
