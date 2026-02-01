@@ -1,20 +1,64 @@
 package http
 
 import (
-	"encoding/json"
+	"fmt"
 	"net/http"
-	"strings"
 	"time"
 
 	"unify-backend/cmd"
 	"unify-backend/internal/worker"
 	"unify-backend/internal/ws"
+
+	"github.com/gin-gonic/gin"
 )
 
-type Handler struct {
+type GinHandler struct {
 	manager *worker.Manager
 	wsHub   *ws.Hub
 }
+
+func NewGinHandler(m *worker.Manager) *GinHandler {
+	return &GinHandler{
+		manager: m,
+		wsHub:   ws.NewHub(),
+	}
+}
+
+// Register routes ke router Gin
+func (h *GinHandler) RegisterRoutes(router *gin.Engine) {
+	fmt.Print()
+	// Service routes
+	router.GET("/services/:service/status", h.status)
+	router.PUT("/services/:service/status", h.status)
+
+	// WebSocket route
+	router.GET("/ws/services", func(c *gin.Context) {
+		conn, err := ws.Upgrader.Upgrade(c.Writer, c.Request, nil)
+		if err != nil {
+			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+		if err != nil {
+			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+
+		h.wsHub.Register(conn)
+
+		go func() {
+			defer h.wsHub.Unregister(conn)
+			for {
+				if _, _, err := conn.ReadMessage(); err != nil {
+					break
+				}
+			}
+		}()
+	})
+}
+
+// ========================
+// Handler logic tetap sama
+// ========================
 
 type StatusPayload struct {
 	Status worker.Status `json:"status"`
@@ -26,50 +70,22 @@ type StatusResponse struct {
 	At      time.Time     `json:"at"`
 }
 
-func NewHandler(m *worker.Manager) http.Handler {
-	h := &Handler{
-		manager: m,
-		wsHub:   ws.NewHub(),
-	}
-
-	mux := http.NewServeMux()
-
-	// existing http
-	mux.HandleFunc("/services/", h.router)
-
-	// NEW: websocket
-	mux.Handle("/ws/services", ws.ServeWS(h.wsHub))
-
-	return mux
-}
-
-func (h *Handler) router(w http.ResponseWriter, r *http.Request) {
-	if strings.HasSuffix(r.URL.Path, "/status") {
-		h.status(w, r)
-		return
-	}
-	http.NotFound(w, r)
-}
-
-func (h *Handler) status(w http.ResponseWriter, r *http.Request) {
-	parts := strings.Split(r.URL.Path, "/")
-	if len(parts) < 4 {
-		http.Error(w, "invalid path", http.StatusBadRequest)
+func (h *GinHandler) status(c *gin.Context) {
+	service := c.Param("service")
+	if service == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid service"})
 		return
 	}
 
-	service := parts[2]
-
-	switch r.Method {
-
+	switch c.Request.Method {
 	case http.MethodGet:
 		status, ok := h.manager.Status(service)
 		if !ok {
-			http.Error(w, "service not found", http.StatusNotFound)
+			c.JSON(http.StatusNotFound, gin.H{"error": "service not found"})
 			return
 		}
 
-		json.NewEncoder(w).Encode(StatusResponse{
+		c.JSON(http.StatusOK, StatusResponse{
 			Service: service,
 			Status:  status,
 			At:      time.Now(),
@@ -77,49 +93,49 @@ func (h *Handler) status(w http.ResponseWriter, r *http.Request) {
 
 	case http.MethodPut:
 		var payload StatusPayload
-		if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
-			http.Error(w, "invalid payload", http.StatusBadRequest)
+		if err := c.ShouldBindJSON(&payload); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid payload"})
 			return
 		}
 
 		switch payload.Status {
 		case worker.StatusStarted, worker.StatusStopped:
 			if err := h.manager.SetStatus(service, payload.Status); err != nil {
-				http.Error(w, err.Error(), http.StatusNotFound)
+				c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
 				return
 			}
 
 		case worker.StatusRestart:
 			if service == cmd.ServiceMonitoringNetwork {
 				if err := RestartMonitoringNetwork(h.manager); err != nil {
-					http.Error(w, err.Error(), http.StatusInternalServerError)
+					c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 					return
 				}
 				payload.Status = worker.StatusStarted
 			} else {
 				err := h.manager.Restart(service)
 				if err != nil {
-					http.Error(w, "restart not supported for this service", http.StatusBadRequest)
+					c.JSON(http.StatusBadRequest, gin.H{"error": "restart not supported for this service"})
 					return
 				}
 				if err := h.manager.SetStatus(service, worker.StatusStarted); err != nil {
-					http.Error(w, err.Error(), http.StatusNotFound)
+					c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
 					return
 				}
 			}
 
 			payload.Status = worker.StatusRestart
+
 		default:
-			http.Error(w, "invalid status value", http.StatusBadRequest)
+			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid status value"})
 			return
 		}
 
-		json.NewEncoder(w).Encode(StatusResponse{
+		c.JSON(http.StatusOK, StatusResponse{
 			Service: service,
 			Status:  payload.Status,
 			At:      time.Now(),
 		})
-
 	}
 }
 
