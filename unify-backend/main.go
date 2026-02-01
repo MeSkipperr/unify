@@ -54,18 +54,14 @@ func main() {
 	// ===== Public Routes =====
 	public := router.Group("/api")
 	{
-		public.POST("/login", authHandler.Login)
+		public.POST("/login",  )
 	}
 
 	// ===== Protected Routes =====
 	protected := router.Group("/api")
 	protected.Use(middleware.GinJWTMiddleware(os.Getenv("JWT_SECRET")))
 	{
-		protected.GET("/user/profile", func(c *gin.Context) {
-			// Contoh ambil user ID dari JWT claims
-			claims := c.MustGet("claims").(map[string]interface{})
-			c.JSON(200, api.SuccessResponse(claims, "Authenticated"))
-		})
+		protected.GET("/user/profile", services.ProfileHandler)
 	}
 
 	// ===== WebSocket Routes =====
