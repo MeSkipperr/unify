@@ -1,11 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
-import AppNavbar from "@/components/navbar";
-import AppSidebar from "@/components/sidebar";
-import { SidebarProvider } from "@/components/ui/sidebar";
 import { ThemeProvider } from "next-themes";
 import { Toaster } from "@/components/ui/sonner";
-
 
 export const metadata: Metadata = {
   title: "Unify",
@@ -26,20 +22,9 @@ export default function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
-
-          <SidebarProvider>
-            <div className="flex min-h-screen w-full">
-              <AppSidebar />
-              <div className="flex flex-1 flex-col">
-                <AppNavbar />
-                <main className="flex-1 p-4 overflow-y-auto">
-                  {children}
-                </main>
-              </div>
-            </div>
-          </SidebarProvider>
+          {children}
+          <Toaster />
         </ThemeProvider>
-        <Toaster />
       </body>
     </html>
   );
