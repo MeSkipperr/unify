@@ -43,6 +43,11 @@ const DataTable = <TData,>({
         React.useState<VisibilityState>({})
     const [rowSelection, setRowSelection] = React.useState({})
 
+    const payload = {
+        username : "data",
+        password : "pass-date"
+    }
+
     const table = useReactTable({
         data,
         columns,
@@ -152,7 +157,7 @@ const DataTable = <TData,>({
                                         </EmptyHeader>
                                         {handleFetchData && (
                                             <EmptyContent>
-                                                <Button onClick={() => handleFetchData()}>
+                                                <Button onClick={async () => handleFetchData()}>
                                                     Reload Data
                                                 </Button>
                                             </EmptyContent>

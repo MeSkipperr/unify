@@ -69,7 +69,7 @@ const DeviceTableData = () => {
         payload.sort = sortOptions
             .filter(s => s.value !== "none")
             .map(s => `${s.key}:${s.value}`)
-
+        
         payload.search = search
         updateParam("search", search)
 
@@ -77,7 +77,7 @@ const DeviceTableData = () => {
             const result = await getDevices(payload)
             setData(result)
         } catch (err) {
-            console.table(err)
+            // console.table(err)
         } finally {
             setIsLoading(false)
         }

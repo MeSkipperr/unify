@@ -6,6 +6,6 @@ export type LoginPayload = {
 }
 
 export const loginRequest = async (payload: LoginPayload) => {
-    const res = await api.post("/auth/login", payload)
-    return res.data
-}
+    const res = await api.post("/auth/login", payload);
+    return res.data;
+};

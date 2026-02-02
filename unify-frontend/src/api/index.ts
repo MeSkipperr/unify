@@ -20,25 +20,6 @@ api.interceptors.response.use(
             }
             return Promise.reject(error)
         }
-
-        const { status } = error.response
-
-        if (isClient) {
-            switch (status) {
-                case 401:
-                    toast.error("Unauthorized. Please login again.")
-                    break
-                case 403:
-                    toast.error("Access denied.")
-                    break
-                case 500:
-                    toast.error("Internal server error. Please try again later.")
-                    break
-                default:
-                    toast.error("Something went wrong.")
-            }
-        }
-
         return Promise.reject(error)
     }
 )
