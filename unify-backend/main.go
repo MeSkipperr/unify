@@ -38,23 +38,24 @@ func main() {
 		log.Println("worker error:", err)
 	}
 
-	router := gin.Default()
 	apiHandler := api.NewHandler(manager)
 
 	mtrSocket := ws.NewHub()
 	manager.SetMTRhub(mtrSocket)
 
-	router.GET("/ws/mtr", func(c *gin.Context) {
+
+	apiHandler.GET("/ws/mtr", func(c *gin.Context) {
 		ws.ServeWS(mtrSocket).ServeHTTP(c.Writer, c.Request)
 	})
 
+
 	server := &http.Server{
-		Addr:    config.ServerPort,
-		Handler: apiHandler,
+		Addr:    config.ServerPort, 
+		Handler: apiHandler,       
 	}
 
 	log.Println("Server running at: ", config.ServerPort)
-	if err := server.ListenAndServe(); err != nil {
+	if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 		log.Fatal(err)
 	}
 }

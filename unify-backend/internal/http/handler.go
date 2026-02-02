@@ -1,12 +1,16 @@
 package http
 
 import (
+	"fmt"
 	"net/http"
 	"time"
 
 	"github.com/gin-gonic/gin"
 
+	"github.com/gin-contrib/cors"
 	"unify-backend/cmd"
+	"unify-backend/internal/http/middleware"
+	"unify-backend/internal/services"
 	"unify-backend/internal/worker"
 	"unify-backend/internal/ws"
 )
@@ -26,6 +30,12 @@ type StatusResponse struct {
 	At      time.Time     `json:"at"`
 }
 
+type User struct {
+	Username string `json:"username"`
+	Email    string `json:"email"`
+	Password string `json:"password"`
+}
+
 func NewHandler(m *worker.Manager) *gin.Engine {
 	h := &Handler{
 		manager: m,
@@ -33,6 +43,42 @@ func NewHandler(m *worker.Manager) *gin.Engine {
 	}
 
 	router := gin.Default()
+	router.Use(cors.New(cors.Config{
+		AllowOrigins: []string{
+			"http://localhost:3000",
+		},
+		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE"},
+		AllowHeaders:     []string{"Content-Type", "Authorization"},
+		AllowCredentials: true,
+	}))
+
+	router.Use(middleware.LoggerMiddleware())
+
+	auth := router.Group("/auth")
+	{
+		auth.POST("/login", services.LoginHandler)
+		auth.POST("/refresh", services.RefreshTokenHandler) 
+		auth.POST("/me", services.Me) 
+	}
+
+	api := router.Group("/api", middleware.AuthMiddleware)
+
+	{
+		api.POST("/users", func(c *gin.Context) {
+			var newUser User
+			if err := c.ShouldBindJSON(&newUser); err != nil {
+				c.JSON(http.StatusBadRequest, gin.H{"error": "invalid JSON payload"})
+				return
+			}
+			fmt.Println("Payload struct:", newUser.Username)
+			fmt.Println("Payload struct:", newUser.Password)
+
+			c.JSON(http.StatusOK, gin.H{
+				"message": "user received",
+				"user":    newUser,
+			})
+		})
+	}
 
 	// Existing HTTP endpoints
 	router.GET("/services/:service/status", h.getStatus)
