@@ -106,21 +106,8 @@ func Me(c *gin.Context) {
 		return
 	}
 
-	newAccess, _ := utils.GenerateAccessToken(claims.Sub, "", secret)
+	c.JSON(200, gin.H{"message": "access is available"})
 
-	c.SetCookie(
-		"access_token",
-		newAccess,
-		int(utils.AccessTokenTTL.Seconds()),
-		"/",
-		"",
-		true,
-		true,
-	)
-
-	c.JSON(200, gin.H{
-		"user_id": claims.Sub,
-	})
 }
 
 func RefreshTokenHandler(c *gin.Context) {
