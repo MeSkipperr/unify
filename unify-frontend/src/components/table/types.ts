@@ -13,7 +13,8 @@ export type TableProps<TData> = {
     isLoading: boolean
     search: SearchBarProps
     handleFetchData?: () => Promise<void>
-
+    setPageQuery?: React.Dispatch<React.SetStateAction<number>>
+    totalData?: number
 }
 
 export type DataTableStateProps = {

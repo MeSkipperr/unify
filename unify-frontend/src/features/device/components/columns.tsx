@@ -48,6 +48,16 @@ import { NotificationToggle } from './notification-toogle'
 
 export const columns: ColumnDef<Device>[] = [
     {
+        id: "number",  
+        header: () => (
+            <Label className='w-full flex justify-center items-center'>No</Label>
+        ),  
+        cell: ({ row }) => (
+            <Label className='w-full flex justify-center items-center'>{row.index + 1}</Label>
+        ),
+        size: 50,
+    },
+    {
         accessorKey: 'name',
         header: 'Name',
     },

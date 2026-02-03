@@ -6,6 +6,8 @@ export type DeviceQuery = {
     type?: string[]
     sort?: string[]
     search?: string
+    page?: number
+    pageSize?: number
 }
 
 export const getDevices = async (filter?: DeviceQuery) => {
@@ -31,6 +33,10 @@ export const getDevices = async (filter?: DeviceQuery) => {
         params.search = filter.search
     }
 
-    const res = await api.get("/devices", { params })
+    params.page = filter?.page ?? 1;
+    params.pageSize = filter?.pageSize ?? 50;
+
+    const res = await api.get("/api/devices", { params })
+    console.log(res)
     return res.data
 }

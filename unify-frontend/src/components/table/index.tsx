@@ -34,7 +34,9 @@ const DataTable = <TData,>({
     setSort,
     isLoading,
     search,
-    handleFetchData
+    handleFetchData,
+    setPageQuery,
+    totalData = 0
 }: TableProps<TData>) => {
     const [sorting, setSorting] = React.useState<SortingState>([])
     const [columnFilters, setColumnFilters] =
@@ -43,10 +45,34 @@ const DataTable = <TData,>({
         React.useState<VisibilityState>({})
     const [rowSelection, setRowSelection] = React.useState({})
 
-    const payload = {
-        username : "data",
-        password : "pass-date"
-    }
+    const targetRef = React.useRef<HTMLDivElement | null>(null);
+
+    React.useEffect(() => {
+        if (!targetRef.current) return;
+
+        const observer = new IntersectionObserver(
+            (entries) => {
+                entries.forEach((entry) => {
+                    if (entry.isIntersecting && (!isLoading || table.getRowModel().rows.length > 0)) {
+                        setPageQuery?.(prev => {
+                            const newPage = prev + 1;
+                            console.log("Next page:", newPage);
+                            return newPage;
+                        });
+                    }
+                });
+            },
+            { root: null, rootMargin: "0px", threshold: 0 }
+        );
+
+        observer.observe(targetRef.current);
+
+        return () => {
+            if (targetRef.current) observer.unobserve(targetRef.current);
+        };
+    }, [setPageQuery]);
+
+
 
     const table = useReactTable({
         data,
@@ -62,7 +88,7 @@ const DataTable = <TData,>({
         onColumnVisibilityChange: setColumnVisibility,
         onRowSelectionChange: setRowSelection,
         getCoreRowModel: getCoreRowModel(),
-        getPaginationRowModel: getPaginationRowModel(),
+        // getPaginationRowModel: getPaginationRowModel(),
         getFilteredRowModel: getFilteredRowModel(),
     })
     return (
@@ -124,14 +150,7 @@ const DataTable = <TData,>({
                     </TableHeader>
 
                     <TableBody>
-                        {isLoading ? (
-                            Array.from({ length: 5 }).map((_, i) => (
-                                <TableRowSkeleton
-                                    key={i}
-                                    columns={columns.length}
-                                />
-                            ))
-                        ) : table.getRowModel().rows.length ? (
+                        {table.getRowModel().rows.length ? (
                             table.getRowModel().rows.map(row => (
                                 <TableRow key={row.id}>
                                     {row.getVisibleCells().map(cell => (
@@ -144,32 +163,47 @@ const DataTable = <TData,>({
                                     ))}
                                 </TableRow>
                             ))
-                        ) : (
-                            <TableRow>
-                                <TableCell colSpan={columns.length} className="h-32 text-center">
-                                    <Empty>
-                                        <EmptyHeader className="py-0 my-0 gap-0">
-                                            <EmptyMedia variant="icon">
-                                                <TriangleAlert />
-                                            </EmptyMedia>
-                                            <EmptyTitle >Data dot found</EmptyTitle>
-                                            <EmptyDescription>Try adjusting your search or filters.</EmptyDescription>
-                                        </EmptyHeader>
-                                        {handleFetchData && (
-                                            <EmptyContent>
-                                                <Button onClick={async () => handleFetchData()}>
-                                                    Reload Data
-                                                </Button>
-                                            </EmptyContent>
-                                        )}
-                                    </Empty>
-                                </TableCell>
-                            </TableRow>
-                        )}
+
+                        ) :
+                            !isLoading &&
+                                <TableRow>
+                                    <TableCell colSpan={columns.length} className="h-32 text-center">
+                                        <Empty>
+                                            <EmptyHeader className="py-0 my-0 gap-0">
+                                                <EmptyMedia variant="icon">
+                                                    <TriangleAlert />
+                                                </EmptyMedia>
+                                                <EmptyTitle >Data dot found</EmptyTitle>
+                                                <EmptyDescription>Try adjusting your search or filters.</EmptyDescription>
+                                            </EmptyHeader>
+                                            {handleFetchData && (
+                                                <EmptyContent>
+                                                    <Button onClick={async () => handleFetchData()}>
+                                                        Reload Data
+                                                    </Button>
+                                                </EmptyContent>
+                                            )}
+                                        </Empty>
+                                    </TableCell>
+                                </TableRow>
+                        }
+                        {isLoading || (data.length < totalData) ? (
+                            Array.from({ length: 5 }).map((_, i) => (
+                                <TableRowSkeleton key={i} columns={columns.length} />
+                            ))
+                        ) : null}
+
                     </TableBody>
                 </Table>
-
             </div>
+            <div
+                ref={targetRef}
+                style={{
+                    height: "1",
+                    marginTop: "1",
+                    backgroundColor: "transparent",
+                }}
+            />
         </div>
     )
 }

@@ -50,10 +50,11 @@ UNIFY-BACKEND
     [X] Auto Field Search Bar with URL Parameter
     [X] UI 	
     [X] Debaunce Func
-    [ ] Fetch Data use Observer
+    [X] Fetch Data use Observer
+    [X] Row number
 
-[ ] Device API
-[ ] Megrate Data
+[X] Device API
+[X] Megrate Data
 
 [ ] AUTH 
-    [ ] Login Page
+    [X] Login Page

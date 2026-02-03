@@ -19,6 +19,9 @@ const DeviceTableData = () => {
     const [filter, setFilter] = React.useState<FilterConfig[]>(dataFilter);
     const [isLoading, setIsLoading] = React.useState<boolean>(true);
     const [search, setSearch] = React.useState<string>(searchParams.get("search") || "");
+    const [pageQuery, setPageQuery] = React.useState<number>(1);
+    const [totalData, setTotalData] = React.useState<number>(1);
+    const pageSizeQuery: number = 50
 
     const searchParameter: SearchBarProps = {
         id: "device-search-bar",
@@ -37,14 +40,20 @@ const DeviceTableData = () => {
         } else {
             params.set(key, value)
         }
-~
+
         router.replace(`?${params.toString()}`, { scroll: false })
     }
 
     const handleFetchData = React.useCallback(async () => {
+        if(data.length === totalData) return
+
+        console.log(pageQuery)
         setIsLoading(true)
 
-        const payload: DeviceQuery = {}
+        const payload: DeviceQuery = {
+            page: pageQuery,
+            pageSize: pageSizeQuery
+        }
 
         filter.forEach((filter) => {
             const selectedValues = filter.options
@@ -69,19 +78,32 @@ const DeviceTableData = () => {
         payload.sort = sortOptions
             .filter(s => s.value !== "none")
             .map(s => `${s.key}:${s.value}`)
-        
-        payload.search = search
-        updateParam("search", search)
 
+        payload.search = search
+        console.log(payload)
         try {
             const result = await getDevices(payload)
-            setData(result)
+            setTotalData(result.total)
+            const devices: Device[] = result.data.map((item: any) => ({
+                id: item.ID,
+                name: item.Name,
+                ipAddress: item.IPAddress,
+                macAddress: item.MacAddress,
+                roomNumber: item.RoomNumber,
+                isConnect: item.IsConnect,
+                type: item.Type,
+                description: item.Description,
+                notification: item.Notification,
+                statusUpdatedAt: item.Status_updated_at,
+                errorCount: item.ErrorCount
+            }))
+            setData(prev => [...prev, ...devices])
         } catch (err) {
-            // console.table(err)
+            console.table(err)
         } finally {
             setIsLoading(false)
         }
-    }, [filter, sortOptions, search])
+    }, [filter, sortOptions, search,pageQuery])
 
 
 
@@ -104,6 +126,8 @@ const DeviceTableData = () => {
             isLoading={isLoading}
             search={searchParameter}
             handleFetchData={handleFetchData}
+            setPageQuery={setPageQuery}
+            totalData={totalData}
         />
     )
 }
