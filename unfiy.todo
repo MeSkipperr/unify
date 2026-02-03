@@ -35,3 +35,5 @@ UNIFY-BACKEND
     [ ] LOG Print
     
 [ ] TIDY UP LOG SERVICES
+
+[ ] Device API with pagenation

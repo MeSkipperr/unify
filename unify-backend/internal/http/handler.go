@@ -7,12 +7,14 @@ import (
 
 	"github.com/gin-gonic/gin"
 
-	"github.com/gin-contrib/cors"
 	"unify-backend/cmd"
+	"unify-backend/internal/http/handler"
 	"unify-backend/internal/http/middleware"
 	"unify-backend/internal/services"
 	"unify-backend/internal/worker"
 	"unify-backend/internal/ws"
+
+	"github.com/gin-contrib/cors"
 )
 
 type Handler struct {
@@ -52,7 +54,7 @@ func NewHandler(m *worker.Manager) *gin.Engine {
 		AllowCredentials: true,
 	}))
 
-	router.Use(middleware.LoggerMiddleware())
+	router.Use(middleware.LoggerMiddleware("backend-route"))
 
 	auth := router.Group("/auth")
 	{
@@ -78,6 +80,7 @@ func NewHandler(m *worker.Manager) *gin.Engine {
 				"user":    newUser,
 			})
 		})
+		api.GET("/devices",handler.GetDevices)
 	}
 
 	// Existing HTTP endpoints

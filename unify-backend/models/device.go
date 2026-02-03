@@ -26,7 +26,7 @@ type Devices struct {
 	Type         DeviceType `gorm:"type:varchar(30);not null"`
 	Notification bool       `gorm:"default:false"`
 	MacAddress   string     `gorm:"size:50"`
-	status_updated_at time.Time
+	Status_updated_at time.Time
 }
 
 var devicePorts = map[DeviceType][]int{

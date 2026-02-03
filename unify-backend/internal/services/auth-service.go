@@ -117,7 +117,6 @@ func RefreshTokenHandler(c *gin.Context) {
 		return
 	}
 
-	fmt.Println("token", token)
 	claims, err := utils.VerifyJWT(token, os.Getenv("JWT_SECRET"))
 	fmt.Println("claims,", claims)
 	if err != nil || claims.Type != "refresh" {
@@ -131,6 +130,6 @@ func RefreshTokenHandler(c *gin.Context) {
 		os.Getenv("JWT_SECRET"),
 	)
 
-	c.SetCookie("token", newAccessToken, 900, "/", "", true, true)
+	c.SetCookie("token", newAccessToken, int(utils.AccessTokenTTL.Seconds()), "/", "", true, true)
 	c.JSON(200, gin.H{"message": "token refreshed"})
 }
