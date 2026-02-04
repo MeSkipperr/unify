@@ -57,6 +57,12 @@ export default function AppSidebar() {
                                 </SidebarMenuButton>
                             </SidebarMenuItem>
 
+                            <SidebarMenuItem className="pl-4">
+                                <SidebarMenuButton asChild>
+                                    <Link href="/devices/sw">Switch</Link>
+                                </SidebarMenuButton>
+                            </SidebarMenuItem>
+
                             {/* Services */}
                             <SidebarMenuItem>
                                 <SidebarMenuButton asChild className="font-bold">

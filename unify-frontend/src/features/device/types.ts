@@ -1,5 +1,6 @@
 export type Device = {
-    id: string      
+    id: string
+    index: number
     name: string
     ipAddress: string
     macAddress: string

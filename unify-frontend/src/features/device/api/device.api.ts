@@ -1,14 +1,13 @@
 import api from "@/api"
+import { TableQuery } from "@/components/table/types"
 
-export type DeviceQuery = {
-    status?: boolean[]
-    notification?: boolean[]
-    type?: string[]
-    sort?: string[]
-    search?: string
-    page?: number
-    pageSize?: number
-}
+export type DeviceQuery =
+    Pick<TableQuery, "page" | "pageSize" | "search"> & {
+        status?: boolean[]
+        notification?: boolean[],
+        type?:String[]
+        sort?:string[]
+    }
 
 export const getDevices = async (filter?: DeviceQuery) => {
     const params: Record<string, any> = {}
@@ -37,6 +36,5 @@ export const getDevices = async (filter?: DeviceQuery) => {
     params.pageSize = filter?.pageSize ?? 50;
 
     const res = await api.get("/api/devices", { params })
-    console.log(res)
     return res.data
 }

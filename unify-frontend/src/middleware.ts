@@ -7,7 +7,6 @@ const PUBLIC_PATHS = ["/login", "/register"]
 export async function middleware(req: NextRequest) {
     const pathname = req.nextUrl.pathname
 
-    console.log("middleware")
     if (PUBLIC_PATHS.includes(pathname)) {
         return NextResponse.next()
     }

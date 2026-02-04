@@ -53,7 +53,7 @@ export const columns: ColumnDef<Device>[] = [
             <Label className='w-full flex justify-center items-center'>No</Label>
         ),  
         cell: ({ row }) => (
-            <Label className='w-full flex justify-center items-center'>{row.index + 1}</Label>
+            <Label className='w-full flex justify-center items-center'>{row.original.index}</Label>
         ),
         size: 50,
     },

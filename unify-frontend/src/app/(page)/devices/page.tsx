@@ -2,7 +2,7 @@ import DeviceTableData from "@/features/device/components";
 
 const DevicesList = () => {
     return (
-        <div className="">
+        <div className="h-[90dvh]">
             <DeviceTableData/>
         </div>
     );

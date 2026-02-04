@@ -7,53 +7,38 @@ import React from "react";
 import { SortBy } from "@/components/sort/types";
 import { DeviceQuery, getDevices } from "../api/device.api";
 import { FilterConfig } from "@/components/filter/types";
-import { SearchBarProps } from "@/components/table/search";
-import { useRouter, useSearchParams } from "next/navigation"
+import { TableQuery } from "@/components/table/types";
+import { updateFilterOption } from "../utils/select-options";
 
-const DeviceTableData = () => {
-    const router = useRouter()
-    const searchParams = useSearchParams()
-
+const DeviceTableData = (
+    { selectType = "" }: { selectType?: string }
+) => {
+    const defaultFilter = updateFilterOption(dataFilter, "type", selectType)
     const [data, setData] = React.useState<Device[]>([]);
     const [sortOptions, setSortOptions] = React.useState<SortBy[]>(sortData)
-    const [filter, setFilter] = React.useState<FilterConfig[]>(dataFilter);
+    const [filter, setFilter] = React.useState<FilterConfig[]>(defaultFilter);
     const [isLoading, setIsLoading] = React.useState<boolean>(true);
-    const [search, setSearch] = React.useState<string>(searchParams.get("search") || "");
-    const [pageQuery, setPageQuery] = React.useState<number>(1);
     const [totalData, setTotalData] = React.useState<number>(1);
-    const pageSizeQuery: number = 50
 
-    const searchParameter: SearchBarProps = {
+
+    const searchParameter = {
         id: "device-search-bar",
-        value: search,
-        onChange: setSearch,
         description: "Search by name, MAC, IP, room, device type, or description.",
         label: "Search Device",
         placeholder: "DPSCY-..."
     }
 
-    const updateParam = (key: string, value?: string) => {
-        const params = new URLSearchParams(searchParams.toString())
 
-        if (!value || value === "") {
-            params.delete(key)
-        } else {
-            params.set(key, value)
-        }
-
-        router.replace(`?${params.toString()}`, { scroll: false })
-    }
-
-    const handleFetchData = React.useCallback(async () => {
-        if(data.length === totalData) return
-
-        console.log(pageQuery)
+    const handleFetchData = async (payload: TableQuery) => {
         setIsLoading(true)
 
-        const payload: DeviceQuery = {
-            page: pageQuery,
-            pageSize: pageSizeQuery
+        const dataPayload: DeviceQuery = {
+            page: payload.page,
+            pageSize: payload.pageSize,
+            search: payload.search
         }
+
+        console.log(dataPayload)
 
         filter.forEach((filter) => {
             const selectedValues = filter.options
@@ -63,29 +48,28 @@ const DeviceTableData = () => {
             if (selectedValues.length > 0) {
                 switch (filter.key) {
                     case "status":
-                        payload.status = selectedValues as boolean[]
+                        dataPayload.status = selectedValues as boolean[]
                         break
                     case "notification":
-                        payload.notification = selectedValues as boolean[]
+                        dataPayload.notification = selectedValues as boolean[]
                         break
                     case "type":
-                        payload.type = selectedValues as string[]
+                        dataPayload.type = selectedValues as string[]
                         break
                 }
             }
         })
 
-        payload.sort = sortOptions
+        dataPayload.sort = sortOptions
             .filter(s => s.value !== "none")
             .map(s => `${s.key}:${s.value}`)
 
-        payload.search = search
-        console.log(payload)
         try {
-            const result = await getDevices(payload)
+            const result = await getDevices(dataPayload)
             setTotalData(result.total)
             const devices: Device[] = result.data.map((item: any) => ({
                 id: item.ID,
+                index: item.index,
                 name: item.Name,
                 ipAddress: item.IPAddress,
                 macAddress: item.MacAddress,
@@ -97,36 +81,28 @@ const DeviceTableData = () => {
                 statusUpdatedAt: item.Status_updated_at,
                 errorCount: item.ErrorCount
             }))
-            setData(prev => [...prev, ...devices])
+            setData(devices)
         } catch (err) {
             console.table(err)
         } finally {
             setIsLoading(false)
         }
-    }, [filter, sortOptions, search,pageQuery])
+    }
 
-
-
-    React.useEffect(() => {
-        const timer = setTimeout(() => {
-            handleFetchData()
-        }, 800)
-
-        return () => clearTimeout(timer)
-    }, [handleFetchData])
 
     return (
         <DataTable
             data={data}
             filter={filter}
+            defaultFilter={defaultFilter}
             columns={columns}
             setFilter={setFilter}
             sort={sortOptions}
             setSort={setSortOptions}
             isLoading={isLoading}
-            search={searchParameter}
+            setIsLoading={setIsLoading}
+            searchProps={searchParameter}
             handleFetchData={handleFetchData}
-            setPageQuery={setPageQuery}
             totalData={totalData}
         />
     )

@@ -1,7 +1,7 @@
 "use client"
 
 import React from "react";
-import { TableProps } from "./types";
+import { TableProps, TableQuery } from "./types";
 import { ColumnFiltersState, flexRender, getCoreRowModel, getFilteredRowModel, getPaginationRowModel, SortingState, useReactTable, VisibilityState } from "@tanstack/react-table";
 import {
     Table,
@@ -18,26 +18,33 @@ import {
     DropdownMenuTrigger,
 } from "../ui/dropdown-menu"
 import { Button } from "../ui/button"
-import { ChevronDown, TriangleAlert } from "lucide-react"
+import { ChevronDown, RotateCw, TriangleAlert } from "lucide-react"
 import FilterGroup from "../filter/filter-group";
 import { SearchBar } from "./search";
 import SortGroup from "../sort";
-import TableRowSkeleton from "./skeleton";
 import { Empty, EmptyContent, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "../ui/empty";
+import PagenationTable from "./pagenation";
+import { useRouter, useSearchParams } from "next/navigation";
+import { Label } from "@radix-ui/react-label";
+import TableRowSkeleton from "./skeleton";
 
 const DataTable = <TData,>({
     data,
     columns,
     filter,
+    defaultFilter,
     setFilter,
     sort,
     setSort,
     isLoading,
-    search,
+    setIsLoading,
+    searchProps,
+    useObserver = false,
     handleFetchData,
-    setPageQuery,
-    totalData = 0
+    totalData
 }: TableProps<TData>) => {
+    const router = useRouter();
+    const searchParams = useSearchParams()
     const [sorting, setSorting] = React.useState<SortingState>([])
     const [columnFilters, setColumnFilters] =
         React.useState<ColumnFiltersState>([])
@@ -46,6 +53,9 @@ const DataTable = <TData,>({
     const [rowSelection, setRowSelection] = React.useState({})
 
     const targetRef = React.useRef<HTMLDivElement | null>(null);
+    const [search, setSearch] = React.useState<string>(searchParams.get("search") || "");
+    const [pageSizeQuery, setPageSizeQuery] = React.useState<number>(25);
+    const [pageQuery, setPageQuery] = React.useState<number>(1);
 
     React.useEffect(() => {
         if (!targetRef.current) return;
@@ -56,7 +66,6 @@ const DataTable = <TData,>({
                     if (entry.isIntersecting && (!isLoading || table.getRowModel().rows.length > 0)) {
                         setPageQuery?.(prev => {
                             const newPage = prev + 1;
-                            console.log("Next page:", newPage);
                             return newPage;
                         });
                     }
@@ -73,6 +82,43 @@ const DataTable = <TData,>({
     }, [setPageQuery]);
 
 
+    const fetchData = React.useCallback(async () => {
+        const payload: TableQuery = {
+            page: pageQuery,
+            pageSize: pageSizeQuery,
+            search,
+        }
+        const params = new URLSearchParams(searchParams.toString())
+
+        if (search.trim() !== "") {
+            params.set("search", search.toString())
+        } else {
+            params.delete("search") // hapus key jika kosong
+        }
+
+        router.push(`${window.location.pathname}?${params.toString()}`)
+
+        handleFetchData(payload)
+    }, [filter, sort, search, pageQuery, pageSizeQuery])
+
+    React.useEffect(() => {
+        setPageQuery(1)
+    }, [filter, sort, search, pageSizeQuery])
+
+    React.useEffect(() => {
+        setIsLoading(true)
+        const timer = setTimeout(() => {
+            fetchData()
+        }, 800)
+
+        return () => clearTimeout(timer)
+    }, [fetchData])
+
+    const handleResetFilter = () => {
+        setFilter(defaultFilter ?? [])
+        setSort([])
+        setSearch("")
+    }
 
     const table = useReactTable({
         data,
@@ -92,15 +138,16 @@ const DataTable = <TData,>({
         getFilteredRowModel: getFilteredRowModel(),
     })
     return (
-        <div className="w-full space-y-4">
-            <div className="flex justify-end items-center gap-4">
+        <div className="w-full h-full flex flex-col gap-4">
+
+            <div className="flex justify-end items-center gap-4 shrink-0">
                 <SearchBar
-                    id={search.id}
-                    label={search.label}
-                    value={search.value}
-                    onChange={search.onChange}
-                    placeholder={search.placeholder}
-                    description={search.description}
+                    id={searchProps.id}
+                    label={searchProps.label}
+                    value={search}
+                    onChange={setSearch}
+                    placeholder={searchProps.placeholder}
+                    description={searchProps.description}
                 />
                 <DropdownMenu>
                     <DropdownMenuTrigger asChild>
@@ -127,48 +174,58 @@ const DataTable = <TData,>({
                             ))}
                     </DropdownMenuContent>
                 </DropdownMenu>
+                <Button variant="destructive" onClick={()=>handleResetFilter()}>
+                    <RotateCw /> Reset Filter
+                </Button>
             </div>
-            <div className="flex gap-4 items-center ">
-                <SortGroup sortOptions={sort} onChange={setSort} />
-                <FilterGroup data={filter} onChange={setFilter} />
-            </div>
-            <div className="rounded-md border">
-                <Table>
-                    <TableHeader>
-                        {table.getHeaderGroups().map(headerGroup => (
-                            <TableRow key={headerGroup.id}>
-                                {headerGroup.headers.map(header => (
-                                    <TableHead key={header.id}>
-                                        {flexRender(
-                                            header.column.columnDef.header,
-                                            header.getContext()
-                                        )}
-                                    </TableHead>
-                                ))}
-                            </TableRow>
-                        ))}
-                    </TableHeader>
+            <div className="flex gap-4 items-center shrink-0 justify-between">
+                <div className="flex gap-4 items-center">
+                    <SortGroup sortOptions={sort} onChange={setSort} />
+                    <FilterGroup data={filter} onChange={setFilter} />
+                </div>
+                {!isLoading &&
+                    <Label>Total Items: {totalData}</Label>
+                }
 
-                    <TableBody>
-                        {table.getRowModel().rows.length ? (
-                            table.getRowModel().rows.map(row => (
-                                <TableRow key={row.id}>
-                                    {row.getVisibleCells().map(cell => (
-                                        <TableCell key={cell.id}>
+            </div>
+            <div className="flex-1 min-h-0">
+                <div className="h-full rounded-md border overflow-auto">
+                    <Table>
+                        <TableHeader >
+                            {table.getHeaderGroups().map(headerGroup => (
+                                <TableRow key={headerGroup.id}>
+                                    {headerGroup.headers.map(header => (
+                                        <TableHead key={header.id}>
                                             {flexRender(
-                                                cell.column.columnDef.cell,
-                                                cell.getContext()
+                                                header.column.columnDef.header,
+                                                header.getContext()
                                             )}
-                                        </TableCell>
+                                        </TableHead>
                                     ))}
                                 </TableRow>
-                            ))
+                            ))}
+                        </TableHeader>
 
-                        ) :
-                            !isLoading &&
+                        <TableBody>
+                            {isLoading ? (
+                                Array.from({ length: 10 }).map((_, i) => (
+                                    <TableRowSkeleton key={i} columns={columns.length} />
+                                ))
+                            ) : table.getRowModel().rows.length > 0 ? (
+                                table.getRowModel().rows.map(row => (
+                                    <TableRow key={row.id}>
+                                        {row.getVisibleCells().map(cell => (
+                                            <TableCell key={cell.id}>
+                                                {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                                            </TableCell>
+                                        ))}
+                                    </TableRow>
+                                ))
+                            ) :
+                                !isLoading &&
                                 <TableRow>
                                     <TableCell colSpan={columns.length} className="h-32 text-center">
-                                        <Empty>
+                                        <Empty className="">
                                             <EmptyHeader className="py-0 my-0 gap-0">
                                                 <EmptyMedia variant="icon">
                                                     <TriangleAlert />
@@ -176,34 +233,38 @@ const DataTable = <TData,>({
                                                 <EmptyTitle >Data dot found</EmptyTitle>
                                                 <EmptyDescription>Try adjusting your search or filters.</EmptyDescription>
                                             </EmptyHeader>
-                                            {handleFetchData && (
-                                                <EmptyContent>
-                                                    <Button onClick={async () => handleFetchData()}>
-                                                        Reload Data
-                                                    </Button>
-                                                </EmptyContent>
-                                            )}
+                                            <EmptyContent>
+                                                <Button onClick={async () => fetchData()}>
+                                                    Reload Data
+                                                </Button>
+                                            </EmptyContent>
                                         </Empty>
                                     </TableCell>
                                 </TableRow>
-                        }
-                        {isLoading || (data.length < totalData) ? (
-                            Array.from({ length: 5 }).map((_, i) => (
-                                <TableRowSkeleton key={i} columns={columns.length} />
-                            ))
-                        ) : null}
+                            }
 
-                    </TableBody>
-                </Table>
+                        </TableBody>
+                    </Table>
+                </div>
             </div>
-            <div
-                ref={targetRef}
-                style={{
-                    height: "1",
-                    marginTop: "1",
-                    backgroundColor: "transparent",
-                }}
+            <PagenationTable
+                pageQuery={pageQuery}
+                setPageQuery={setPageQuery}
+                pageSizeQuery={pageSizeQuery}
+                setPageSizeQuery={setPageSizeQuery}
+                totalData={totalData}
             />
+            {
+                useObserver &&
+                <div
+                    ref={targetRef}
+                    style={{
+                        height: "1",
+                        marginTop: "1",
+                        backgroundColor: "transparent",
+                    }}
+                />
+            }
         </div>
     )
 }
