@@ -18,7 +18,7 @@ import {
     DropdownMenuTrigger,
 } from "../ui/dropdown-menu"
 import { Button } from "../ui/button"
-import { ChevronDown, RotateCw, TriangleAlert } from "lucide-react"
+import { ChevronDown, Plus, RotateCw, TriangleAlert } from "lucide-react"
 import FilterGroup from "../filter/filter-group";
 import { SearchBar } from "./search";
 import SortGroup from "../sort";
@@ -41,7 +41,8 @@ const DataTable = <TData,>({
     searchProps,
     useObserver = false,
     handleFetchData,
-    totalData
+    totalData,
+    addNewData
 }: TableProps<TData>) => {
     const router = useRouter();
     const searchParams = useSearchParams()
@@ -174,9 +175,10 @@ const DataTable = <TData,>({
                             ))}
                     </DropdownMenuContent>
                 </DropdownMenu>
-                <Button variant="destructive" onClick={()=>handleResetFilter()}>
+                <Button variant="destructive" onClick={() => handleResetFilter()}>
                     <RotateCw /> Reset Filter
                 </Button>
+                {addNewData}
             </div>
             <div className="flex gap-4 items-center shrink-0 justify-between">
                 <div className="flex gap-4 items-center">
@@ -247,23 +249,25 @@ const DataTable = <TData,>({
                     </Table>
                 </div>
             </div>
-            <PagenationTable
-                pageQuery={pageQuery}
-                setPageQuery={setPageQuery}
-                pageSizeQuery={pageSizeQuery}
-                setPageSizeQuery={setPageSizeQuery}
-                totalData={totalData}
-            />
+
             {
-                useObserver &&
-                <div
-                    ref={targetRef}
-                    style={{
-                        height: "1",
-                        marginTop: "1",
-                        backgroundColor: "transparent",
-                    }}
-                />
+                useObserver ?
+                    <div
+                        ref={targetRef}
+                        style={{
+                            height: "1",
+                            marginTop: "1",
+                            backgroundColor: "transparent",
+                        }}
+                    />
+                    :
+                    <PagenationTable
+                        pageQuery={pageQuery}
+                        setPageQuery={setPageQuery}
+                        pageSizeQuery={pageSizeQuery}
+                        setPageSizeQuery={setPageSizeQuery}
+                        totalData={totalData}
+                    />
             }
         </div>
     )

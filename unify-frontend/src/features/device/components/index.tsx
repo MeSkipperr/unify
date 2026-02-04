@@ -9,6 +9,7 @@ import { DeviceQuery, getDevices } from "../api/device.api";
 import { FilterConfig } from "@/components/filter/types";
 import { TableQuery } from "@/components/table/types";
 import { updateFilterOption } from "../utils/select-options";
+import NewDataTable from "./new-data";
 
 const DeviceTableData = (
     { selectType = "" }: { selectType?: string }
@@ -104,6 +105,7 @@ const DeviceTableData = (
             searchProps={searchParameter}
             handleFetchData={handleFetchData}
             totalData={totalData}
+            addNewData={<NewDataTable/>}
         />
     )
 }

@@ -11,3 +11,10 @@ export type Device = {
     statusUpdatedAt: Date
     notification: boolean
 }
+
+export enum  DeviceType  {
+    AccessPoint = "access-point",
+    IPTV = "iptv",
+    CCTV = "cctv",
+    Switch = "sw"
+}

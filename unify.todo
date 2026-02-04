@@ -53,6 +53,9 @@ UNIFY-BACKEND
     [X] Fetch Data use Observer
         [X] Change observer use pagenation
     [X] Row number
+    [X] Add New Devices and Add new device form reusable
+    [ ] DElete data
+    [ ] Sort Index asc dasc
 
 [X] Device API
 [X] Megrate Data

@@ -45,13 +45,15 @@ import { Textarea } from '@/components/ui/textarea'
 
 
 import { NotificationToggle } from './notification-toogle'
+import { deleteDevice } from '../api/device.api'
 
-export const columns: ColumnDef<Device>[] = [
+export const columns: ColumnDef<Device>[] =
+ [
     {
-        id: "number",  
+        id: "number",
         header: () => (
             <Label className='w-full flex justify-center items-center'>No</Label>
-        ),  
+        ),
         cell: ({ row }) => (
             <Label className='w-full flex justify-center items-center'>{row.original.index}</Label>
         ),
@@ -324,7 +326,10 @@ export const columns: ColumnDef<Device>[] = [
                             </AlertDialogHeader>
                             <AlertDialogFooter>
                                 <AlertDialogCancel>Keep Device</AlertDialogCancel>
-                                <AlertDialogAction variant="destructive">Delete Device</AlertDialogAction>
+                                <AlertDialogAction variant="destructive" onClick={async () => {
+                                    await deleteDevice(row.original.id)
+                                    // handleFetchData
+                                }}>Delete Device</AlertDialogAction>
                             </AlertDialogFooter>
                         </AlertDialogContent>
                     </AlertDialog>

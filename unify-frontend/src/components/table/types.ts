@@ -2,6 +2,7 @@ import { ColumnDef, ColumnFiltersState, RowSelectionState, SortingState, Visibil
 import { FilterConfig } from "../filter/types"
 import { SortBy } from "../sort/types"
 import { SearchBarProps } from "./search"
+import React from "react"
 
 export type TableQuery = {
     search?: string
@@ -18,16 +19,12 @@ export type TableProps<TData> = {
     sort: SortBy[]
     setSort: React.Dispatch<React.SetStateAction<SortBy[]>>
     isLoading: boolean
-    setIsLoading:React.Dispatch<React.SetStateAction<boolean>>
+    setIsLoading: React.Dispatch<React.SetStateAction<boolean>>
     searchProps: Omit<SearchBarProps, "value" | "onChange">
-    useObserver ?: boolean
-    handleFetchData: (payload:TableQuery) => Promise<void>
-    totalData:number
-    // pageQuery: number
-    // setPageQuery: React.Dispatch<React.SetStateAction<number>>
-    // totalData: number
-    // pageSizeQuery: number
-    // setPageSizeQuery: React.Dispatch<React.SetStateAction<number>>
+    useObserver?: boolean
+    handleFetchData: (payload: TableQuery) => Promise<void>
+    totalData: number
+    addNewData?: React.ReactNode
 }
 
 export type DataTableStateProps = {

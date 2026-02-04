@@ -1,12 +1,15 @@
 import api from "@/api"
 import { TableQuery } from "@/components/table/types"
+import { normalizeIPv4 } from "@/utils/ipv4"
+import { normalizeMacAddress } from "@/utils/macAddress"
+import { DeviceType } from "../types"
 
 export type DeviceQuery =
     Pick<TableQuery, "page" | "pageSize" | "search"> & {
         status?: boolean[]
         notification?: boolean[],
-        type?:String[]
-        sort?:string[]
+        type?: String[]
+        sort?: string[]
     }
 
 export const getDevices = async (filter?: DeviceQuery) => {
@@ -38,3 +41,35 @@ export const getDevices = async (filter?: DeviceQuery) => {
     const res = await api.get("/api/devices", { params })
     return res.data
 }
+
+export type CreateDevicePayload = {
+    name: string;
+    ipAddress: string;
+    macAddress: string;
+    roomNumber?: string;
+    description: string;
+    type: DeviceType
+};
+
+export const addDevice = async (
+    payload: CreateDevicePayload
+) => {
+    const normalizedPayload: CreateDevicePayload = {
+        ...payload,
+        name: payload.name.trim(),
+        description: payload.description.trim(),
+        ipAddress: normalizeIPv4(payload.ipAddress),
+        macAddress: normalizeMacAddress(payload.macAddress),
+        roomNumber: payload.roomNumber?.trim(),
+        type: payload.type,
+    };
+    const res = await api.post("/api/devices", { normalizedPayload })
+
+    return res.data;
+};
+
+
+export const deleteDevice = async (deviceId: string) => {
+    const res = await api.delete(`/api/devices/${deviceId}`)
+    return res.data
+};
