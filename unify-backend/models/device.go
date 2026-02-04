@@ -11,21 +11,22 @@ type DeviceType string
 const (
 	CCTV   DeviceType = "cctv"
 	IPTV   DeviceType = "iptv"
-	AP     DeviceType = "access_point"
+	AP     DeviceType = "access-point"
+	SW     DeviceType = "sw"
 	SWIPTV DeviceType = "sw_iptv"
 )
 
 type Devices struct {
-	ID           uuid.UUID  `gorm:"type:uuid;default:gen_random_uuid();primaryKey"`
-	IPAddress    string     `gorm:"size:45;not null"`
-	IsConnect    bool       `gorm:"default:false"`
-	ErrorCount   int        `gorm:"default:0"`
-	Name         string     `gorm:"size:100;uniqueIndex;not null"`
-	RoomNumber   string     `gorm:"size:50"`
-	Description  string     `gorm:"type:text"`
-	Type         DeviceType `gorm:"type:varchar(30);not null"`
-	Notification bool       `gorm:"default:false"`
-	MacAddress   string     `gorm:"size:50"`
+	ID                uuid.UUID  `gorm:"type:uuid;default:gen_random_uuid();primaryKey"`
+	IPAddress         string     `gorm:"size:45;not null"`
+	IsConnect         bool       `gorm:"default:false"`
+	ErrorCount        int        `gorm:"default:0"`
+	Name              string     `gorm:"size:100;uniqueIndex;not null"`
+	RoomNumber        string     `gorm:"size:50"`
+	Description       string     `gorm:"type:text"`
+	Type              DeviceType `gorm:"type:varchar(30);not null"`
+	Notification      bool       `gorm:"default:false"`
+	MacAddress        string     `gorm:"size:50"`
 	Status_updated_at time.Time
 }
 
