@@ -10,10 +10,16 @@ import { FilterConfig } from "@/components/filter/types";
 import { TableQuery } from "@/components/table/types";
 import { updateFilterOption } from "../utils/select-options";
 import NewDataTable from "./new-data";
+import { ColumnDef } from "@tanstack/react-table";
+import ActionsColums from "./columns/actions";
+import { useSearchParams } from "next/navigation";
+import ActionsColumns from "./columns/actions";
 
 const DeviceTableData = (
     { selectType = "" }: { selectType?: string }
 ) => {
+    const searchParams = useSearchParams()
+
     const defaultFilter = updateFilterOption(dataFilter, "type", selectType)
     const [data, setData] = React.useState<Device[]>([]);
     const [sortOptions, setSortOptions] = React.useState<SortBy[]>(sortData)
@@ -30,13 +36,17 @@ const DeviceTableData = (
     }
 
 
-    const handleFetchData = async (payload: TableQuery) => {
+    const handleFetchData = async (payload?: TableQuery) => {
         setIsLoading(true)
 
+        const page = payload?.page ?? Number(searchParams.get("page")) ?? 1
+        const pageSize = payload?.pageSize ?? Number(searchParams.get("pageSize")) ?? 10
+        const search = payload?.search ?? searchParams.get("search") ?? ""
+
         const dataPayload: DeviceQuery = {
-            page: payload.page,
-            pageSize: payload.pageSize,
-            search: payload.search
+            page,
+            pageSize,
+            search
         }
 
         console.log(dataPayload)
@@ -90,13 +100,31 @@ const DeviceTableData = (
         }
     }
 
+    const finalColumns: ColumnDef<Device>[] = [
+            ...columns,
+            {
+                id: 'actions',
+                header: 'Actions',
+                cell: ({ row }) => {
+                    const deviceRow = row.original
+                    return (
+                        <ActionsColumns
+                            row={deviceRow}
+                            handleFetchData={() => handleFetchData()}
+                        />
+                    )
+                },
+                size: 150
+            }
+        ]
+
 
     return (
         <DataTable
             data={data}
             filter={filter}
             defaultFilter={defaultFilter}
-            columns={columns}
+            columns={finalColumns}
             setFilter={setFilter}
             sort={sortOptions}
             setSort={setSortOptions}
@@ -105,7 +133,7 @@ const DeviceTableData = (
             searchProps={searchParameter}
             handleFetchData={handleFetchData}
             totalData={totalData}
-            addNewData={<NewDataTable/>}
+            addNewData={<NewDataTable handleFetchData={handleFetchData} />}
         />
     )
 }

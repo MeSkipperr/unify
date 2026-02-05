@@ -41,10 +41,18 @@ import { DeviceSchemas, type UserFormValues } from "../schemas/device.schema";
 import { Controller } from "react-hook-form";
 import { DeviceType } from "../types";
 import { addDevice } from "../api/device.api";
+import { toast } from "sonner";
+import { Spinner } from "@/components/ui/spinner";
 
-const NewDataTable = () => {
+type NewDataProps = {
+    handleFetchData: () => Promise<void>
+}
+
+
+const NewDataTable = ({ handleFetchData }: NewDataProps) => {
     const [isOpen, setIsOpen] = useState<boolean>(false);
     const [isUnsavedDialogOpen, setIsUnsavedDialogOpen] = useState(false);
+    const [isLoading, setIsLoading] = useState<boolean>(false);
 
     const {
         register,
@@ -91,14 +99,25 @@ const NewDataTable = () => {
 
 
     const onSubmit = async (data: UserFormValues) => {
+        setIsLoading(true)
+
         try {
-            await addDevice(data);
-            reset();
-            setIsOpen(false);
+            await addDevice(data)
+
+            reset()
+
+            setIsOpen(false)
+
+            await handleFetchData()
+
+            toast.success("Device has been added successfully!", { position: "bottom-right" })
         } catch (err) {
-            console.error(err);
+            toast.error("Failed to add device. Please try again.", { position: "bottom-right" })
+        } finally {
+            setIsLoading(false)
         }
-    };
+    }
+
 
 
     return (
@@ -301,11 +320,29 @@ const NewDataTable = () => {
                     </div>
 
                     <SheetFooter>
-                        <Button type="submit" onClick={handleSubmit(onSubmit)}>Save changes</Button>
+                        <Button
+                            type="submit"
+                            onClick={
+                                handleSubmit(onSubmit)
+                            }
+                            disabled={isLoading}
+                        >
+                            {isLoading ?
+                                <Label>
+                                    <Spinner /> Saving...
+                                </Label>
+                                :
+                                "Save changes"
+                            }
+                        </Button>
                         <SheetClose asChild>
                             <Button
                                 onClick={(event) => handlerClose()}
-                                variant="outline">Close</Button>
+                                variant="outline"
+                                disabled={isLoading}
+                            >
+                                Close
+                            </Button>
                         </SheetClose>
                     </SheetFooter>
                 </SheetContent>

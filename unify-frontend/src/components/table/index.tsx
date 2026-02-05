@@ -2,7 +2,7 @@
 
 import React from "react";
 import { TableProps, TableQuery } from "./types";
-import { ColumnFiltersState, flexRender, getCoreRowModel, getFilteredRowModel, getPaginationRowModel, SortingState, useReactTable, VisibilityState } from "@tanstack/react-table";
+import { ColumnDef, ColumnFiltersState, flexRender, getCoreRowModel, getFilteredRowModel, getPaginationRowModel, SortingState, useReactTable, VisibilityState } from "@tanstack/react-table";
 import {
     Table,
     TableBody,
@@ -27,6 +27,8 @@ import PagenationTable from "./pagenation";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Label } from "@radix-ui/react-label";
 import TableRowSkeleton from "./skeleton";
+import { Device } from "@/features/device/types";
+import ActionsColumns from "@/features/device/components/columns/actions";
 
 const DataTable = <TData,>({
     data,
@@ -55,8 +57,15 @@ const DataTable = <TData,>({
 
     const targetRef = React.useRef<HTMLDivElement | null>(null);
     const [search, setSearch] = React.useState<string>(searchParams.get("search") || "");
-    const [pageSizeQuery, setPageSizeQuery] = React.useState<number>(25);
-    const [pageQuery, setPageQuery] = React.useState<number>(1);
+    const [pageSizeQuery, setPageSizeQuery] = React.useState<number>(
+        Number(searchParams.get("pageSize")) || 25
+    )
+
+    const [pageQuery, setPageQuery] = React.useState<number>(
+        Number(searchParams.get("page")) || 1
+    );
+
+
 
     React.useEffect(() => {
         if (!targetRef.current) return;
@@ -91,11 +100,24 @@ const DataTable = <TData,>({
         }
         const params = new URLSearchParams(searchParams.toString())
 
-        if (search.trim() !== "") {
-            params.set("search", search.toString())
+        if (pageQuery > 0) {
+            params.set("page", pageQuery.toString())
         } else {
-            params.delete("search") // hapus key jika kosong
+            params.delete("page")
         }
+
+        if (pageSizeQuery > 0) {
+            params.set("pageSize", pageSizeQuery.toString())
+        } else {
+            params.delete("pageSize")
+        }
+
+        if (search.trim() !== "") {
+            params.set("search", search)
+        } else {
+            params.delete("search")
+        }
+
 
         router.push(`${window.location.pathname}?${params.toString()}`)
 
