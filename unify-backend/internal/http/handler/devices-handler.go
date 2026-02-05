@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+	"time"
 	"unify-backend/internal/database"
 	"unify-backend/internal/services"
 	"unify-backend/models"
@@ -122,7 +123,8 @@ func CreateDevice() gin.HandlerFunc {
 			MacAddress:   mac,
 			IsConnect:    false,
 			ErrorCount:   0,
-			Notification: false,
+			Notification: true,
+			Status_updated_at: time.Now(),
 		}
 
 		if err := database.DB.Create(&device).Error; err != nil {
