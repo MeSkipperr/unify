@@ -86,6 +86,10 @@ func NewHandler(m *worker.Manager) *gin.Engine {
 		api.POST("/devices", handler.CreateDevice())
 		api.DELETE("/devices/:id", handler.DeleteDevice())
 		api.PUT("/devices/:id", handler.ChangeDevice())
+
+
+		api.GET("/services",handler.GetServices())
+		api.GET("/services/:serviceName",handler.GetServiceByName())
 	}
 
 	// Existing HTTP endpoints

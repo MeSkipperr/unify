@@ -7,10 +7,6 @@ import (
 	"gorm.io/datatypes"
 )
 
-type ServiceStatus struct {
-	Status string `gorm:"type:varchar(20);primaryKey"`
-}
-
 type Service struct {
 	ID uuid.UUID `gorm:"type:uuid;default:gen_random_uuid();primaryKey"`
 
@@ -26,5 +22,4 @@ type Service struct {
 
 	UpdatedAt time.Time
 
-	ServiceStatus ServiceStatus `gorm:"foreignKey:Status;references:Status"`
 }
