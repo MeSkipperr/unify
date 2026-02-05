@@ -37,7 +37,7 @@ export const dataFilter: FilterConfig[] = [
 ]
 
 export const sortData: SortBy[] = [
-    { key: "roomNumber", label: "Room Number", value: "none" },
+    { key: "roomNumber", label: "Room Number", value: "ascending" },
     { key: "lastUpdate", label: "Last Update", value: "none" },
-    { key: "index", label: "Index", value: "none" },
+    { key: "created_at", label: "Created At", value: "ascending" },
 ]

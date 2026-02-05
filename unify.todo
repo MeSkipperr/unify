@@ -40,12 +40,12 @@ UNIFY-BACKEND
     [ ] Last Change devices
     [ ] Device Type : SW = Switch, Remove TYPE SWIPTV
 
-[ ] Table Device
+[X] Table Device
     [X] Fetch data andd skelton
     [X] Add State Function for Filter
     [X] Search Bar Function
     [X] Filter UNIFY
-    [ ] Edit UI and Update Data
+    [X] Edit UI and Update Data
     [X] Notification Function 
     [X] Auto Field Search Bar with URL Parameter
     [X] UI 	
@@ -55,7 +55,8 @@ UNIFY-BACKEND
     [X] Row number
     [X] Add New Devices and Add new device form reusable
     [X] DElete data
-    [ ] Sort Index asc dasc
+
+    [X] Sort Index & Status asc dasc
 
 [X] Device API
 [X] Megrate Data
