@@ -45,11 +45,12 @@ func NewHandler(m *worker.Manager) *gin.Engine {
 	}
 
 	router := gin.Default()
+	router.RemoveExtraSlash = true
 	router.Use(cors.New(cors.Config{
 		AllowOrigins: []string{
 			"http://localhost:3000",
 		},
-		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE"},
+		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE","PATCH"},
 		AllowHeaders:     []string{"Content-Type", "Authorization"},
 		AllowCredentials: true,
 	}))
@@ -59,8 +60,8 @@ func NewHandler(m *worker.Manager) *gin.Engine {
 	auth := router.Group("/auth")
 	{
 		auth.POST("/login", services.LoginHandler)
-		auth.POST("/refresh", services.RefreshTokenHandler) 
-		auth.POST("/me", services.Me) 
+		auth.POST("/refresh", services.RefreshTokenHandler)
+		auth.POST("/me", services.Me)
 	}
 
 	api := router.Group("/api", middleware.AuthMiddleware)
@@ -80,9 +81,11 @@ func NewHandler(m *worker.Manager) *gin.Engine {
 				"user":    newUser,
 			})
 		})
-		api.GET("/devices",handler.GetDevices)
-		api.POST("/devices",handler.CreateDevice())
-		router.DELETE("/api/devices/:id", handler.DeleteDevice())
+		api.GET("/devices", handler.GetDevices)
+		api.PATCH("/devices/:id/notification", handler.ChangeNotification())
+		api.POST("/devices", handler.CreateDevice())
+		api.DELETE("/devices/:id", handler.DeleteDevice())
+		api.PUT("/devices/:id", handler.ChangeDevice())
 	}
 
 	// Existing HTTP endpoints

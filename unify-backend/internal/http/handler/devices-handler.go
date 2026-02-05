@@ -58,17 +58,18 @@ func GetDevices(c *gin.Context) {
 	})
 }
 
+type CreateDeviceRequest struct {
+	NormalizedPayload struct {
+		Name        string `json:"name" binding:"required"`
+		IPAddress   string `json:"ipAddress" binding:"required"`
+		MacAddress  string `json:"macAddress" binding:"required"`
+		RoomNumber  string `json:"roomNumber"`
+		Description string `json:"description" binding:"required"`
+		Type        string `json:"type" binding:"required"`
+	} `json:"normalizedPayload" binding:"required"`
+}
+
 func CreateDevice() gin.HandlerFunc {
-	type CreateDeviceRequest struct {
-		NormalizedPayload struct {
-			Name        string `json:"name" binding:"required"`
-			IPAddress   string `json:"ipAddress" binding:"required"`
-			MacAddress  string `json:"macAddress" binding:"required"`
-			RoomNumber  string `json:"roomNumber"`
-			Description string `json:"description" binding:"required"`
-			Type        string `json:"type" binding:"required"`
-		} `json:"normalizedPayload" binding:"required"`
-	}
 
 	return func(c *gin.Context) {
 		var req CreateDeviceRequest
@@ -115,15 +116,15 @@ func CreateDevice() gin.HandlerFunc {
 		}
 
 		device := models.Devices{
-			IPAddress:    ip,
-			Name:         strings.TrimSpace(payload.Name),
-			RoomNumber:   strings.ToUpper(strings.TrimSpace(payload.RoomNumber)),
-			Description:  strings.TrimSpace(payload.Description),
-			Type:         deviceType,
-			MacAddress:   mac,
-			IsConnect:    false,
-			ErrorCount:   0,
-			Notification: true,
+			IPAddress:         ip,
+			Name:              strings.TrimSpace(payload.Name),
+			RoomNumber:        strings.ToUpper(strings.TrimSpace(payload.RoomNumber)),
+			Description:       strings.TrimSpace(payload.Description),
+			Type:              deviceType,
+			MacAddress:        mac,
+			IsConnect:         false,
+			ErrorCount:        0,
+			Notification:      true,
 			Status_updated_at: time.Now(),
 		}
 
@@ -137,6 +138,92 @@ func CreateDevice() gin.HandlerFunc {
 
 		c.JSON(http.StatusCreated, gin.H{
 			"message": "Device created successfully",
+			"data":    device,
+		})
+	}
+}
+
+func ChangeDevice() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		// Ambil deviceId dari URL
+		idParam := c.Param("id")
+		deviceId, err := uuid.Parse(idParam)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{
+				"message": "Invalid device ID",
+				"error":   err.Error(),
+			})
+			return
+		}
+		// Binding request body
+		var req CreateDeviceRequest
+
+		if err := c.ShouldBindJSON(&req); err != nil {
+			fmt.Println("json", err)
+
+			c.JSON(http.StatusBadRequest, gin.H{
+				"message": "Invalid request body",
+				"error":   err.Error(),
+			})
+			return
+		}
+
+		payload := req.NormalizedPayload
+
+		// Normalisasi IP dan MAC
+		ip, err := utils.NormalizeIPv4(payload.IPAddress)
+		if err != nil {
+			fmt.Println("ip", err)
+
+			c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+			return
+		}
+
+		mac, err := utils.NormalizeMac(payload.MacAddress)
+		if err != nil {
+			fmt.Println("mac", err)
+
+			c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+			return
+		}
+
+		// Convert string to DeviceType enum
+		deviceType := models.DeviceType(payload.Type)
+		switch deviceType {
+		case models.AP, models.IPTV, models.CCTV, models.SW:
+			// valid
+		default:
+			fmt.Println("err", deviceType)
+
+			c.JSON(http.StatusBadRequest, gin.H{"message": "Invalid device type"})
+			return
+		}
+
+		// Cari device berdasarkan ID
+		var device models.Devices
+		if err := database.DB.First(&device, "id = ?", deviceId).Error; err != nil {
+			c.JSON(http.StatusNotFound, gin.H{"message": "Device not found"})
+			return
+		}
+
+		// Update field
+		device.Name = strings.TrimSpace(payload.Name)
+		device.IPAddress = ip
+		device.MacAddress = mac
+		device.RoomNumber = strings.ToUpper(strings.TrimSpace(payload.RoomNumber))
+		device.Description = strings.TrimSpace(payload.Description)
+		device.Type = deviceType
+
+		if err := database.DB.Save(&device).Error; err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"message": "Failed to update device",
+				"error":   err.Error(),
+			})
+			return
+		}
+
+		c.JSON(http.StatusOK, gin.H{
+			"message": "Device updated successfully",
 			"data":    device,
 		})
 	}
@@ -175,6 +262,61 @@ func DeleteDevice() gin.HandlerFunc {
 
 		c.JSON(http.StatusOK, gin.H{
 			"message": "Device deleted successfully",
+		})
+	}
+}
+
+func ChangeNotification() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		// Ambil deviceId dari URL
+		idParam := c.Param("id")
+		deviceId, err := uuid.Parse(idParam)
+		if err != nil {
+			fmt.Println(err)
+
+			c.JSON(http.StatusBadRequest, gin.H{
+				"message": "Invalid device ID",
+				"error":   err.Error(),
+			})
+			return
+		}
+
+		// Binding request body
+		var req struct {
+			Notification bool `json:"notification"`
+		}
+
+		if err := c.ShouldBindJSON(&req); err != nil {
+			fmt.Println(req.Notification)
+			c.JSON(http.StatusBadRequest, gin.H{
+				"message": "Invalid request body",
+				"error":   err.Error(),
+			})
+			return
+		}
+
+		// Cari device berdasarkan ID
+		var device models.Devices
+		if err := database.DB.First(&device, "id = ?", deviceId).Error; err != nil {
+			fmt.Println("id",err)
+			c.JSON(http.StatusNotFound, gin.H{"message": "Device not found"})
+			return
+		}
+
+		// Update notification
+		device.Notification = req.Notification
+
+		if err := database.DB.Save(&device).Error; err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"message": "Failed to update notification",
+				"error":   err.Error(),
+			})
+			return
+		}
+
+		c.JSON(http.StatusOK, gin.H{
+			"message": "Notification updated successfully",
+			"data":    device,
 		})
 	}
 }
