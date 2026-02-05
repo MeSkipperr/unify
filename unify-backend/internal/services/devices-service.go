@@ -59,7 +59,7 @@ func GetDevicesPaginated(
 		like := "%" + search + "%"
 		db = db.Where(
 			"ip_address ILIKE ? OR name ILIKE ? OR room_number ILIKE ? OR type ILIKE ? OR mac_address ILIKE ? OR description ILIKE ?",
-			like, like, like, like, like,like,
+			like, like, like, like, like, like,
 		)
 	}
 
@@ -85,8 +85,8 @@ func GetDevicesPaginated(
 	if sort != "" {
 		allowedSort := map[string]string{
 			"roomNumber": "room_number",
-			"lastUpdate": "last_update",
-			"index":      "id",
+			"lastUpdate": "status_updated_at",
+			"created_at": "created_at",
 		}
 
 		orders := strings.Split(sort, ",")

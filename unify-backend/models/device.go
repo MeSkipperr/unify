@@ -28,6 +28,7 @@ type Devices struct {
 	Notification      bool       `gorm:"default:false"`
 	MacAddress        string     `gorm:"size:50"`
 	Status_updated_at time.Time
+	CreatedAt         time.Time `gorm:"autoCreateTime"`
 }
 
 var devicePorts = map[DeviceType][]int{

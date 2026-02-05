@@ -2,7 +2,6 @@ package handler
 
 import (
 	"bytes"
-	"fmt"
 	"io"
 	"net/http"
 	"strconv"
@@ -73,13 +72,9 @@ func CreateDevice() gin.HandlerFunc {
 
 	return func(c *gin.Context) {
 		var req CreateDeviceRequest
-		fmt.Println("Method:", c.Request.Method)
-		fmt.Println("Path:", c.Request.URL.Path)
 		var bodyBytes []byte
 		if c.Request.Body != nil {
 			bodyBytes, _ = io.ReadAll(c.Request.Body)
-			fmt.Println("Raw body:", string(bodyBytes))
-			// Reset body supaya bisa digunakan lagi oleh ShouldBindJSON
 			c.Request.Body = io.NopCloser(bytes.NewBuffer(bodyBytes))
 		}
 
@@ -88,7 +83,6 @@ func CreateDevice() gin.HandlerFunc {
 				"message": "Invalid request body",
 				"error":   err.Error(),
 			})
-			fmt.Println(err)
 			return
 		}
 		payload := req.NormalizedPayload
@@ -159,7 +153,6 @@ func ChangeDevice() gin.HandlerFunc {
 		var req CreateDeviceRequest
 
 		if err := c.ShouldBindJSON(&req); err != nil {
-			fmt.Println("json", err)
 
 			c.JSON(http.StatusBadRequest, gin.H{
 				"message": "Invalid request body",
@@ -173,7 +166,6 @@ func ChangeDevice() gin.HandlerFunc {
 		// Normalisasi IP dan MAC
 		ip, err := utils.NormalizeIPv4(payload.IPAddress)
 		if err != nil {
-			fmt.Println("ip", err)
 
 			c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
 			return
@@ -181,7 +173,6 @@ func ChangeDevice() gin.HandlerFunc {
 
 		mac, err := utils.NormalizeMac(payload.MacAddress)
 		if err != nil {
-			fmt.Println("mac", err)
 
 			c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
 			return
@@ -193,7 +184,6 @@ func ChangeDevice() gin.HandlerFunc {
 		case models.AP, models.IPTV, models.CCTV, models.SW:
 			// valid
 		default:
-			fmt.Println("err", deviceType)
 
 			c.JSON(http.StatusBadRequest, gin.H{"message": "Invalid device type"})
 			return
@@ -272,7 +262,6 @@ func ChangeNotification() gin.HandlerFunc {
 		idParam := c.Param("id")
 		deviceId, err := uuid.Parse(idParam)
 		if err != nil {
-			fmt.Println(err)
 
 			c.JSON(http.StatusBadRequest, gin.H{
 				"message": "Invalid device ID",
@@ -287,7 +276,6 @@ func ChangeNotification() gin.HandlerFunc {
 		}
 
 		if err := c.ShouldBindJSON(&req); err != nil {
-			fmt.Println(req.Notification)
 			c.JSON(http.StatusBadRequest, gin.H{
 				"message": "Invalid request body",
 				"error":   err.Error(),
@@ -298,7 +286,6 @@ func ChangeNotification() gin.HandlerFunc {
 		// Cari device berdasarkan ID
 		var device models.Devices
 		if err := database.DB.First(&device, "id = ?", deviceId).Error; err != nil {
-			fmt.Println("id",err)
 			c.JSON(http.StatusNotFound, gin.H{"message": "Device not found"})
 			return
 		}
