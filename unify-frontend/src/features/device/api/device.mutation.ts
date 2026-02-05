@@ -4,6 +4,6 @@ export const updateDeviceNotification = async (
     deviceId: string,
     notification: boolean
 ) => {
-    const res = await api.patch(`/devices/${deviceId}`, { notification })
+    const res = await api.patch(`/api/devices/${deviceId}/notification`, { notification })
     return res.data
 }

@@ -9,10 +9,6 @@ import {
     SheetTitle,
     SheetTrigger,
 } from "@/components/ui/sheet"
-import { Button } from "../../../components/ui/button";
-import { Textarea } from "../../../components/ui/textarea";
-import { Label } from "../../../components/ui/label";
-import { Input } from "../../../components/ui/input";
 import { Plus } from "lucide-react";
 import {
     Select,
@@ -37,19 +33,26 @@ import { handleIPv4Input } from "@/utils/ipv4";
 import { handleMacAddressInput } from "@/utils/macAddress";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { DeviceSchemas, type UserFormValues } from "../schemas/device.schema";
 import { Controller } from "react-hook-form";
-import { DeviceType } from "../types";
-import { addDevice } from "../api/device.api";
 import { toast } from "sonner";
 import { Spinner } from "@/components/ui/spinner";
+import { Device, DeviceType } from "../../types";
+import { DeviceSchemas, UserFormValues } from "../../schemas/device.schema";
+import { changeData } from "../../api/device.api";
+import { Button } from "@/components/ui/button";
+import { Label } from "@radix-ui/react-label";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { DeviceStatus } from "@/components/status";
+import { formatDateTime } from "@/utils/time";
 
-type NewDataProps = {
-    handleFetchData: () => Promise<void>
+type ChangeDataProps = {
+    handleFetchData: () => void
+    row: Device
 }
 
 
-const NewDataTable = ({ handleFetchData }: NewDataProps) => {
+const NewDataTable = ({ row, handleFetchData }: ChangeDataProps) => {
     const [isOpen, setIsOpen] = useState<boolean>(false);
     const [isUnsavedDialogOpen, setIsUnsavedDialogOpen] = useState(false);
     const [isLoading, setIsLoading] = useState<boolean>(false);
@@ -65,12 +68,12 @@ const NewDataTable = ({ handleFetchData }: NewDataProps) => {
     } = useForm<UserFormValues>({
         resolver: zodResolver(DeviceSchemas),
         defaultValues: {
-            name: "",
-            description: "",
-            ipAddress: "",
-            macAddress: "",
-            roomNumber: "",
-            type: undefined,
+            name: row.name,
+            description: row.description,
+            ipAddress: row.ipAddress,
+            macAddress: row.macAddress,
+            roomNumber: row.roomNumber,
+            type: (row.type as DeviceType) ?? undefined,
         },
     });
 
@@ -82,9 +85,16 @@ const NewDataTable = ({ handleFetchData }: NewDataProps) => {
         );
     };
 
+    const hasChanges = (): boolean => {
+        return Object.keys(watchedValues).some((key) => {
+            const field = key as keyof typeof watchedValues
+            return watchedValues[field] !== row[field]
+        })
+    }
+
 
     const handlerClose = () => {
-        if (hasAnyValue()) {
+        if (hasAnyValue() && hasChanges()) {
             setIsUnsavedDialogOpen(true);
             return;
         }
@@ -92,9 +102,9 @@ const NewDataTable = ({ handleFetchData }: NewDataProps) => {
     }
 
     const handleDiscardChange = () => {
-        reset();
         setIsUnsavedDialogOpen(false);
         setIsOpen(false);
+        reset()
     };
 
 
@@ -102,7 +112,7 @@ const NewDataTable = ({ handleFetchData }: NewDataProps) => {
         setIsLoading(true)
 
         try {
-            await addDevice(data)
+            await changeData(row.id, data)
 
             reset()
 
@@ -110,13 +120,14 @@ const NewDataTable = ({ handleFetchData }: NewDataProps) => {
 
             await handleFetchData()
 
-            toast.success("Device has been added successfully!", { position: "bottom-right" })
+            toast.success("Device has been updated successfully!", { position: "bottom-right" })
         } catch (err) {
-            toast.error("Failed to add device. Please try again.", { position: "bottom-right" })
+            toast.error("Failed to update device. Please try again.", { position: "bottom-right" })
         } finally {
             setIsLoading(false)
         }
     }
+
 
 
 
@@ -152,10 +163,7 @@ const NewDataTable = ({ handleFetchData }: NewDataProps) => {
             </Dialog>
 
             <SheetTrigger asChild>
-                <Button onClick={() => setIsOpen(true)} >
-                    <Plus />
-                    Add New
-                </Button>
+                <Button onClick={() => setIsOpen(true)} variant="ghost" className='w-full flex justify-start gap-0 py-0 px-2'>Edit</Button>
             </SheetTrigger>
             <form onSubmit={handleSubmit(onSubmit)} >
 
@@ -163,11 +171,17 @@ const NewDataTable = ({ handleFetchData }: NewDataProps) => {
                     showCloseButton={false}
                     onInteractOutside={(event) => handlerClose()}>
                     <SheetHeader>
-                        <SheetTitle>
-                            Add New Device
+                        <SheetTitle className="flex items-center gap-4">
+                            Device Details
+                            <DeviceStatus isConnect={row.isConnect} />
                         </SheetTitle>
+
                         <SheetDescription>
-                            Enter device details including name, type, IP, MAC, room number, and description.
+                            View and manage configuration details, network identity, and operational status of this device.
+                        </SheetDescription>
+
+                        <SheetDescription className="text-primary">
+                            Last status update: {formatDateTime(row.statusUpdatedAt)}
                         </SheetDescription>
                     </SheetHeader>
                     <div className="mt-2 space-y-6 px-4">
@@ -325,14 +339,15 @@ const NewDataTable = ({ handleFetchData }: NewDataProps) => {
                             onClick={
                                 handleSubmit(onSubmit)
                             }
-                            disabled={isLoading}
+
+                            disabled={isLoading || !hasChanges()}
                         >
                             {isLoading ?
                                 <Label className="flex gap-4 items-center">
                                     <Spinner /> Saving...
                                 </Label>
                                 :
-                                "Save Devices"
+                                "Save changes"
                             }
                         </Button>
                         <SheetClose asChild>

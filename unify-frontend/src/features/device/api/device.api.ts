@@ -68,6 +68,25 @@ export const addDevice = async (
     return res.data;
 };
 
+export const changeData = async (
+    deviceId: string,
+    payload: CreateDevicePayload
+) => {
+    // Normalisasi payload sama seperti addDevice
+    const normalizedPayload: CreateDevicePayload = {
+        ...payload,
+        name: payload.name.trim(),
+        description: payload.description.trim(),
+        ipAddress: normalizeIPv4(payload.ipAddress),
+        macAddress: normalizeMacAddress(payload.macAddress),
+        roomNumber: payload.roomNumber?.trim(),
+        type: payload.type,
+    }
+
+    const res = await api.put(`/api/devices/${deviceId}`, { normalizedPayload })
+
+    return res.data
+}
 
 export const deleteDevice = async (deviceId: string) => {
     const res = await api.delete(`/api/devices/${deviceId}`)

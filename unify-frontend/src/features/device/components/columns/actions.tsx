@@ -39,6 +39,7 @@ import { deleteDevice } from "../../api/device.api";
 import { Device } from "../../types";
 import { formatDateTime } from "@/utils/time";
 import { toast } from "sonner";
+import ChangeData from "./change-data";
 
 type ActionsProps = {
     row: Device
@@ -151,105 +152,8 @@ const ActionsColumns = ({ row, handleFetchData }: ActionsProps) => {
                             </div>
                         )}
                     </SheetContent>
-
                 </Sheet>
-                <Sheet>
-                    <SheetTrigger asChild>
-                        <Button variant="ghost" className='w-full flex justify-start gap-0 py-0 px-2'>Edit</Button>
-                    </SheetTrigger>
-                    <SheetContent className="sm:max-w-md">
-                        <SheetHeader>
-                            <SheetTitle className="flex items-center gap-4">
-                                Device Details
-                                <DeviceStatus isConnect={row.isConnect} />
-                            </SheetTitle>
-
-                            <SheetDescription>
-                                View and manage configuration details, network identity, and operational status of this device.
-                            </SheetDescription>
-
-                            <SheetDescription className="text-primary">
-                                Last status update: {formatDateTime(row.statusUpdatedAt)}
-                            </SheetDescription>
-                        </SheetHeader>
-
-
-                        <div className="mt-2 space-y-6 px-4">
-                            <div className="grid grid-cols-2 gap-4">
-
-                                <div className="space-y-1">
-                                    <Label className="text-xs text-muted-foreground">
-                                        Device Name
-                                    </Label>
-                                    <Input
-                                        defaultValue={row.name}
-                                        className="h-8 text-sm"
-                                    />
-                                </div>
-
-                                <div className="space-y-1">
-                                    <Label className="text-xs text-muted-foreground">
-                                        Device Type
-                                    </Label>
-                                    <Input
-                                        defaultValue={row.type}
-                                        className="h-8 text-sm"
-                                    />
-                                </div>
-
-                                <div className="space-y-1">
-                                    <Label className="text-xs text-muted-foreground">
-                                        IP Address
-                                    </Label>
-                                    <Input
-                                        defaultValue={row.ipAddress}
-                                        className="h-8 text-sm font-mono"
-                                    />
-                                </div>
-
-                                <div className="space-y-1">
-                                    <Label className="text-xs text-muted-foreground">
-                                        MAC Address
-                                    </Label>
-                                    <Input
-                                        defaultValue={row.macAddress}
-                                        className="h-8 text-sm font-mono"
-                                    />
-                                </div>
-
-                                <div className="space-y-1">
-                                    <Label className="text-xs text-muted-foreground">
-                                        Room Number
-                                    </Label>
-                                    <Input
-                                        defaultValue={row.roomNumber}
-                                        className="h-8 text-sm"
-                                    />
-                                </div>
-
-                            </div>
-                        </div>
-                        <div className="space-y-1 px-4">
-                            <Label className="text-xs text-muted-foreground">
-                                Description
-                            </Label>
-
-                            <Textarea
-                                defaultValue={row.description || ""}
-                                className="text-sm min-h-[100px]"
-                                placeholder="Enter device description..."
-                            />
-                        </div>
-
-                        <SheetFooter>
-                            <Button type="submit">Save changes</Button>
-                            <SheetClose asChild>
-                                <Button variant="outline">Close</Button>
-                            </SheetClose>
-                        </SheetFooter>
-                    </SheetContent>
-
-                </Sheet>
+                <ChangeData row={row} handleFetchData={handleFetchData} />
                 <DropdownMenuItem >
                     <Link href={`/port-forward?listen-ip=${row.ipAddress}`} className='size-full'>
                         Port Forward
