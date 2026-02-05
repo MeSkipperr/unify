@@ -92,6 +92,10 @@ const ServicesTable = () => {
                     :
 
                     datas.map((data) => {
+                        const url = () => {
+                            if (data.serviceName === "monitoring-network") return "/devices"
+                            return "/services/" + data.serviceName
+                        }
                         const isDisabled = data.status !== "RUNNING" && data.status !== "STOPPED"
                         return (
                             <TableRow key={"services-" + data.serviceName}>
@@ -146,7 +150,7 @@ const ServicesTable = () => {
                                 <TableCell
                                     className="text-right flex justify-end"
                                 >
-                                    <Link href={"/services/" + data.serviceName}>
+                                    <Link href={url()}>
                                         <ArrowUpRight />
                                     </Link>
                                 </TableCell>
