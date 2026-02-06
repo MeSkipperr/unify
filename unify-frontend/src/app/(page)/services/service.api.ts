@@ -14,6 +14,10 @@ export const getServices = async (query: ServicesQueryProps) => {
     const res = await api.get("/api/services", { params })
     return res.data
 }
+export const getServicesByName = async (name:string) => {
+    const res = await api.get(`/api/services/${name}`)
+    return res.data
+}
 
 export const changeStatus = async (url: string, status: string) => {
     const res = await api.put(url, {  status })

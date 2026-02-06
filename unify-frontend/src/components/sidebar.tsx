@@ -69,15 +69,6 @@ export default function AppSidebar() {
                                     <Link href="/services">Services</Link>
                                 </SidebarMenuButton>
                             </SidebarMenuItem>
-
-                            <SidebarMenuItem className="pl-4">
-                                <SidebarMenuButton asChild>
-                                    <Link href="/services/network-monitoring">
-                                        Monitoring Network
-                                    </Link>
-                                </SidebarMenuButton>
-                            </SidebarMenuItem>
-
                             <SidebarMenuItem className="pl-4">
                                 <SidebarMenuButton asChild>
                                     <Link href="/services/adb">
@@ -104,7 +95,7 @@ export default function AppSidebar() {
 
                             <SidebarMenuItem className="pl-4">
                                 <SidebarMenuButton asChild>
-                                    <Link href="/services/speed-test">Speed Test</Link>
+                                    <Link href="/services/get-speedtest-network">Speed Test</Link>
                                 </SidebarMenuButton>
                             </SidebarMenuItem>
 
