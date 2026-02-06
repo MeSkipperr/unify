@@ -61,7 +61,7 @@ func GetServiceByName() gin.HandlerFunc {
 		}
 
 		var service models.Service
-		err := database.DB.Preload("ServiceStatus").
+		err := database.DB.
 			Where("service_name = ?", serviceName).
 			First(&service).Error
 		if err != nil {

@@ -90,6 +90,8 @@ func NewHandler(m *worker.Manager) *gin.Engine {
 
 		api.GET("/services",handler.GetServices())
 		api.GET("/services/:serviceName",handler.GetServiceByName())
+
+		api.GET("/services/speedtest", handler.GetSpeedtestByInternalIPAndServer())
 	}
 
 	// Existing HTTP endpoints

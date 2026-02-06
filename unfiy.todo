@@ -37,3 +37,8 @@ UNIFY-BACKEND
 [ ] TIDY UP LOG SERVICES
 
 [ ] Device API with pagenation
+
+[ ] Adb command tools 
+    [ ] API
+    [ ] Controler
+    [ ] Log 
