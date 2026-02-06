@@ -1,4 +1,12 @@
+import { Metadata } from "next";
 import ServicesTable from "./services-table";
+
+
+export const metadata: Metadata = {
+    title: "Services | Unify",
+    description: "Manage and monitor all services in the Unify system.",
+};
+
 
 const ServicesPage = () => {
     return (

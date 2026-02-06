@@ -2,6 +2,7 @@ import { Services } from "@/types/service.type"
 import { cookies } from "next/headers"
 import { redirect } from "next/navigation"
 import SpeedNetworkChart, { SpeedTestInformation } from "./speed-network-chart"
+import { Metadata } from "next"
 
 type NetworkDetailProps = {
     name: string,
@@ -14,6 +15,12 @@ type ConfigProps = {
     network: NetworkDetailProps[]
     serverId: number[]
 }
+
+export const metadata: Metadata = {
+    title: "Speed Test - Services | Unify",
+    description: "Monitor all speed network in the Unify system.",
+};
+
 
 export default async function Page() {
     const serviceName = "get-speedtest-network"
