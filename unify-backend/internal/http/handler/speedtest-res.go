@@ -33,9 +33,9 @@ func GetSpeedtestByInternalIPAndServer() gin.HandlerFunc {
 
 		err = database.DB.
 			Where("internal_ip = ? AND server_id = ?", internalIP, serverID).
-			Order("tested_at DESC").
+			Order("tested_at ASC").
+			Limit(30).
 			Find(&results).Error
-
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{
 				"error": err.Error(),
