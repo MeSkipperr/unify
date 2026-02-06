@@ -29,7 +29,7 @@ const chartConfig = {
     },
     upload: {
         label: "Upload",
-        color: "#00FFFF",
+        color: "#00e1e2",
     },
     download: {
         label: "Download",
@@ -37,7 +37,7 @@ const chartConfig = {
     },
     ping: {
         label: "Ping",
-        color: "#E4FF30",
+        color: "#00b809",
     },
 } satisfies ChartConfig
 
@@ -186,7 +186,6 @@ const SpeedNetworkChart = ({ information }: SpeedNetworkChartProps) => {
                                         return formatDateTime(date)
                                     }}
                                     formatter={(value, name, item: any) => {
-                                        let text = value
                                         let unit = ""
 
                                         if (name === "download" || name === "upload") {
@@ -198,7 +197,7 @@ const SpeedNetworkChart = ({ information }: SpeedNetworkChartProps) => {
                                         }
 
                                         return [
-                                            <span className="flex w-full justify-between gap-2">
+                                            <span key="data-speedtes-result" className="flex w-full justify-between gap-2">
                                                 <span className="capitalize">
                                                     {name}
                                                 </span>

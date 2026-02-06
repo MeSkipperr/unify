@@ -1,6 +1,5 @@
 import { Services } from "@/types/service.type"
 import { cookies } from "next/headers"
-import ChartGroup from "./chart-group"
 import { redirect } from "next/navigation"
 import SpeedNetworkChart, { SpeedTestInformation } from "./speed-network-chart"
 
