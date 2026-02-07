@@ -87,7 +87,7 @@ export default function AppSidebar() {
 
                             <SidebarMenuItem className="pl-8">
                                 <SidebarMenuButton asChild>
-                                    <Link href="/services/adb/uptime">
+                                    <Link href="/services/adb/get-uptime-adb">
                                         Get Uptime
                                     </Link>
                                 </SidebarMenuButton>

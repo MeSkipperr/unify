@@ -8,6 +8,7 @@ export type TableQuery = {
     search?: string
     page?: number
     pageSize?: number
+    date?: Date
 }
 
 export type TableProps<TData> = {

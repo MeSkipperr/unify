@@ -59,6 +59,7 @@ UNIFY-BACKEND
     [X] Sort Index & Status asc dasc
 
 [X] Device API
+    [ ] Device Mac Address
 [X] Megrate Data
 
 [ ] AUTH 
@@ -67,4 +68,5 @@ UNIFY-BACKEND
 
 [ ] services    
     [X]SpeedTest
+    [ ] service api. /services -> /api/services
     
