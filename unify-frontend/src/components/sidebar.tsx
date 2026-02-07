@@ -107,7 +107,7 @@ export default function AppSidebar() {
 
                             <SidebarMenuItem className="pl-4">
                                 <SidebarMenuButton asChild>
-                                    <Link href="/services/traceroute">Trace Route</Link>
+                                    <Link href="/services/trace-route">Trace Route</Link>
                                 </SidebarMenuButton>
                             </SidebarMenuItem>
 
