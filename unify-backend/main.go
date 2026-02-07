@@ -10,7 +10,6 @@ import (
 	"unify-backend/internal/worker"
 	"unify-backend/internal/ws"
 
-	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
 	_ "github.com/lib/pq"
 )
@@ -44,9 +43,7 @@ func main() {
 	manager.SetMTRhub(mtrSocket)
 
 
-	apiHandler.GET("/ws/mtr", func(c *gin.Context) {
-		ws.ServeWS(mtrSocket).ServeHTTP(c.Writer, c.Request)
-	})
+	apiHandler.GET("/ws/mtr", ws.ServeWS(mtrSocket))
 
 
 	server := &http.Server{

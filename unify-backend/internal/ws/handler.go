@@ -3,22 +3,23 @@ package ws
 import (
 	"net/http"
 
+	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
 )
 
 var upgrader = websocket.Upgrader{
 	CheckOrigin: func(r *http.Request) bool {
-		return true // untuk local / internal network
+		return true // untuk development / internal network
 	},
 }
 
-func ServeWS(hub *Hub) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		conn, err := upgrader.Upgrade(w, r, nil)
+func ServeWS(hub *Hub) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		conn, err := upgrader.Upgrade(c.Writer, c.Request, nil)
 		if err != nil {
+			println("Upgrade failed:", err.Error())
 			return
 		}
-
 		hub.Register(conn)
 
 		go func() {

@@ -49,9 +49,10 @@ func NewHandler(m *worker.Manager) *gin.Engine {
 	router.Use(cors.New(cors.Config{
 		AllowOrigins: []string{
 			"http://localhost:3000",
+			"http://localhost:5500",
 		},
-		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE","PATCH"},
-        AllowHeaders:     []string{"Origin", "Content-Type", "Authorization"},
+		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE", "PATCH"},
+		AllowHeaders:     []string{"Origin", "Content-Type", "Authorization"},
 		AllowCredentials: true,
 	}))
 
@@ -87,10 +88,9 @@ func NewHandler(m *worker.Manager) *gin.Engine {
 		api.DELETE("/devices/:id", handler.DeleteDevice())
 		api.PUT("/devices/:id", handler.ChangeDevice())
 
-
-		api.GET("/services",handler.GetServices())
-		api.GET("/services/:serviceName",handler.GetServiceByName())
-		api.GET("/services/adb",handler.GetAdbResults)
+		api.GET("/services", handler.GetServices())
+		api.GET("/services/:serviceName", handler.GetServiceByName())
+		api.GET("/services/adb", handler.GetAdbResults)
 
 		api.GET("/services/speedtest", handler.GetSpeedtestByInternalIPAndServer())
 	}
@@ -100,9 +100,7 @@ func NewHandler(m *worker.Manager) *gin.Engine {
 	router.PUT("/services/:service/status", h.updateStatus)
 
 	// Websocket
-	router.GET("/ws/services", func(c *gin.Context) {
-		ws.ServeWS(h.wsHub).ServeHTTP(c.Writer, c.Request)
-	})
+	// router.GET("/ws/mtr", ws.ServeWS(h.wsHub))
 
 	return router
 }
