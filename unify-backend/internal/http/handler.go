@@ -51,7 +51,7 @@ func NewHandler(m *worker.Manager) *gin.Engine {
 			"http://localhost:3000",
 		},
 		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE","PATCH"},
-		AllowHeaders:     []string{"Content-Type", "Authorization"},
+        AllowHeaders:     []string{"Origin", "Content-Type", "Authorization"},
 		AllowCredentials: true,
 	}))
 
@@ -90,6 +90,7 @@ func NewHandler(m *worker.Manager) *gin.Engine {
 
 		api.GET("/services",handler.GetServices())
 		api.GET("/services/:serviceName",handler.GetServiceByName())
+		api.GET("/services/adb",handler.GetAdbResults)
 
 		api.GET("/services/speedtest", handler.GetSpeedtestByInternalIPAndServer())
 	}
