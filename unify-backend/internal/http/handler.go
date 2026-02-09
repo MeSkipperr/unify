@@ -79,7 +79,7 @@ func NewHandler(m *worker.Manager) *gin.Engine {
 
 			c.JSON(http.StatusOK, gin.H{
 				"message": "user received",
-				"user":    newUser,
+				"user":    newUser,	
 			})
 		})
 		api.GET("/devices", handler.GetDevices)
@@ -93,14 +93,18 @@ func NewHandler(m *worker.Manager) *gin.Engine {
 		api.GET("/services/adb", handler.GetAdbResults)
 
 		api.GET("/services/speedtest", handler.GetSpeedtestByInternalIPAndServer())
+
+		api.GET("/services/mtr-sessions/active",handler.GetActiveMTRSessions())
+		api.POST("/services/mtr-sessions",handler.CreateMTRSession())
+		api.PUT("/services/mtr-sessions",handler.DisableMTRSession())
+
+		api.GET("/services/mtr-sessions/result/:id",handler.GetMTRResult())
 	}
 
 	// Existing HTTP endpoints
 	router.GET("/services/:service/status", h.getStatus)
 	router.PUT("/services/:service/status", h.updateStatus)
 
-	// Websocket
-	// router.GET("/ws/mtr", ws.ServeWS(h.wsHub))
 
 	return router
 }
