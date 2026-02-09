@@ -1,34 +1,213 @@
-'use client'
+"use client"
 
-import ChartTraceRoute from "./chart";
-import { ChartDataItem, mapHubsToChartData } from "./mtr/mapHubsToChartData";
-import { useMTR } from "./mtr/useMTR";
-import TraceDetail from "./trace-detail";
+import { Button } from "@/components/ui/button"
+import {
+    Table,
+    TableBody,
+    TableCaption,
+    TableCell,
+    TableHead,
+    TableHeader,
+    TableRow,
+} from "@/components/ui/table"
+import {
+    Select,
+    SelectContent,
+    SelectGroup,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui/select"
 
-const chartData = [
-    { isConnect: true, time: new Date(Date.now() - 60_000).getTime(), ping: 10 },
-    { isConnect: true, time: new Date(Date.now() - 50_000).getTime(), ping: 130 },
-    { isConnect: true, time: new Date(Date.now() - 40_000).getTime(), ping: 20 },
-    { isConnect: false, time: new Date(Date.now() - 30_000).getTime(), ping: 30 },
-    { isConnect: false, time: new Date(Date.now() - 20_000).getTime(), ping: 30 },
-    { isConnect: true, time: new Date(Date.now() - 10_000).getTime(), ping: 20 },
-]
+import {
+    Dialog,
+    DialogClose,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+    DialogTrigger,
+} from "@/components/ui/dialog"
+
+import { ArrowUpRight, Badge, Ellipsis } from "lucide-react"
+import Link from "next/link"
+import { useEffect, useState } from "react"
+import { changeStatus, getTraceSession } from "./trace.api"
+import { getCompactRelativeTime } from "@/utils/time"
+import TableRowSkeleton from "@/components/table/skeleton"
+import { DeviceStatus } from "@/components/status"
+
+
+export type TraceSessionType = {
+    id: string
+    status: string
+    isReachable: boolean
+
+    createdAt: Date
+    lastRunAt: Date | null
+
+    sourceIp: string
+    destinationIp: string
+
+    protocol: string
+    port: number | null
+
+    test: number
+    note: string
+    sendNotification: boolean
+}
+
 
 const TraceGroup = () => {
-    const mtrData = useMTR("ws://localhost:8080/ws/mtr")
+    const [datas, setDatas] = useState<TraceSessionType[]>([])
+    const [isLoading, setIsLoading] = useState<boolean>(true);
 
-    const latestHubs: ChartDataItem[] = mtrData ? mapHubsToChartData(mtrData.message.report.hubs) : []
+    useEffect(() => {
+        const fetchData = async () => {
+            try {
+                setIsLoading(true)
+                const res = await getTraceSession({ page: 1, pageSize: 50 })
+                const session: TraceSessionType[] = res.data.map((item: any) => ({
+                    id: item.ID,
+                    status: item.Status,
+                    isReachable: item.IsReachable,
 
+                    createdAt: new Date(item.CreatedAt),
+                    lastRunAt: item.LastRunAt ? new Date(item.LastRunAt) : null,
+
+                    sourceIp: item.SourceIP,
+                    destinationIp: item.DestinationIP,
+
+                    protocol: item.Protocol,
+                    port: item.Port,
+
+                    test: item.Test,
+                    note: item.Note,
+                    sendNotification: item.SendNotification,
+                }))
+
+                // console.log(session)
+                setDatas(session)
+            } catch (error) {
+                console.log(error)
+            } finally {
+                setIsLoading(false)
+            }
+        }
+
+        fetchData()
+    }, [])
     return (
-        <div className="w-[1000px] lg:w-full h-[85dvh] flex flex-col">
-            <div className="w-full h-1/2 overflow-y-auto">
-                <TraceDetail chartData={latestHubs}/>
-            </div>
-            {/* <div className="w-full h-1/2">
-                <ChartTraceRoute chartData={chartData} />
-            </div> */}
-        </div>
+        <Table >
+            <TableCaption>Overview of Trace Route Services Currently Running</TableCaption>
+            <TableHeader>
+                <TableRow>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Source IP</TableHead>
+                    <TableHead>Destiantion IP</TableHead>
+                    <TableHead>Protocol</TableHead>
+                    <TableHead>Port</TableHead>
+                    <TableHead>LastRunAt</TableHead>
+                    <TableHead>Is Reachable</TableHead>
+                    <TableHead>Details</TableHead>
+                    <TableHead className="text-right">Site</TableHead>
+                </TableRow>
+            </TableHeader>
+            <TableBody>
+                {isLoading ? (
+                    Array.from({ length: 10 }).map((_, i) => (
+                        <TableRowSkeleton key={i} columns={8} />
+                    ))
+                ) : (
+                    datas.map((data) => {
+                        return (
+                            <TableRow key={data.id} >
+
+                                {/* Status */}
+                                <TableCell>
+                                    {data.status}
+                                </TableCell>
+                                <TableCell>{data.destinationIp}</TableCell>
+
+                                {/* Destination IP */}
+                                <TableCell>{data.destinationIp}</TableCell>
+
+                                {/* Protocol */}
+                                <TableCell className="uppercase">
+                                    {data.protocol}
+                                </TableCell>
+
+                                {/* Port */}
+                                <TableCell>
+                                    {data.port ?? "-"}
+                                </TableCell>
+
+                                {/* Last Run At */}
+                                <TableCell>
+                                    {data.lastRunAt
+                                        ? getCompactRelativeTime(data.lastRunAt)
+                                        : "-"}
+                                </TableCell>
+
+                                {/* Is Reachable */}
+                                <TableCell>
+                                    <DeviceStatus isConnect={data.isReachable} />
+                                </TableCell>
+
+                                {/* Details */}
+                                <TableCell >
+                                    <Dialog>
+                                        <DialogTrigger asChild>
+                                            <Button variant="ghost">
+                                                <Ellipsis />
+                                            </Button>
+                                        </DialogTrigger>
+
+                                        <DialogContent>
+                                            <DialogHeader>
+                                                <DialogTitle>MTR Session Detail</DialogTitle>
+                                            </DialogHeader>
+
+                                            <div className="space-y-2 text-sm">
+                                                <p><b>ID:</b> {data.id}</p>
+                                                <p><b>Source IP:</b> {data.sourceIp || "-"}</p>
+                                                <p><b>Destination IP:</b> {data.destinationIp}</p>
+                                                <p><b>Protocol:</b> {data.protocol}</p>
+                                                <p><b>Test:</b> {data.test}</p>
+                                                <p><b>Note:</b> {data.note || "-"}</p>
+                                                <p>
+                                                    <b>Notification:</b>{" "}
+                                                    {data.sendNotification ? "Enabled" : "Disabled"}
+                                                </p>
+                                            </div>
+
+                                            <DialogFooter>
+                                                <DialogClose asChild>
+                                                    <Button variant="outline">Close</Button>
+                                                </DialogClose>
+                                            </DialogFooter>
+                                        </DialogContent>
+                                    </Dialog>
+                                </TableCell>
+                                <TableCell
+                                    className="text-right flex justify-end"
+                                >
+                                    <Link href={`/services/trace-route/${data.id}`}>
+                                        <ArrowUpRight />
+                                    </Link>
+                                </TableCell>
+                            </TableRow>
+                        )
+                    }
+
+                    ))
+                }
+            </TableBody>
+
+        </Table >
     );
 }
 
 export default TraceGroup;
+
