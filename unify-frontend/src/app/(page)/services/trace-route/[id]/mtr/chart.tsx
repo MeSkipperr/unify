@@ -95,18 +95,26 @@ const ChartTraceRoute = ({ chartData }: ChartProps) => {
                 {/* ================= X AXIS (INDEX BASED) ================= */}
                 <XAxis
                     dataKey="index"
-                    type="number"
-                    domain={[0, "dataMax"]}
                     tickLine={false}
                     axisLine={false}
+                    interval={10}
                     tickMargin={8}
-                    tickFormatter={(i) =>
-                        indexedData[i]
-                            ? formatDateTime(new Date(indexedData[i].time))
-                            : ""
-                    }
-                />
+                    minTickGap={32}
+                    domain={[0, "dataMax"]}
+                    tickFormatter={(i) => {
+                        const value = indexedData[i]
 
+                        if (!value) return ""
+
+                        const date = new Date(value.time)
+
+                        return date.toLocaleString("id-ID", {
+                            hour: "2-digit",
+                            minute: "2-digit",
+                        })
+                    }}
+
+                />
                 {/* ================= TOOLTIP ================= */}
                 <ChartTooltip
                     content={({ payload }) => {
