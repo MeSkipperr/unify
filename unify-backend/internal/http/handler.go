@@ -99,6 +99,11 @@ func NewHandler(m *worker.Manager) *gin.Engine {
 		api.PUT("/services/mtr-sessions",handler.DisableMTRSession())
 
 		api.GET("/services/mtr-sessions/result/:id",handler.GetMTRResult())
+
+		api.GET("/services/port-forward", handler.GetPortForward())
+		api.POST("/services/port-forward", handler.CreatePortForward())
+		api.PATCH("/services/port-forward/:id/deactivate", handler.DeactivatedPortForward())
+
 	}
 
 	// Existing HTTP endpoints

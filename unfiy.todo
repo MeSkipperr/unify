@@ -31,8 +31,8 @@ UNIFY-BACKEND
     [X] Save To database
         [X] Save Detail Connection
     [X] Send with web socket
-    [ ] APi call
-    [ ] LOG Print
+    [X] APi call
+    [X] LOG Print
     
 [ ] TIDY UP LOG SERVICES
 
@@ -42,3 +42,11 @@ UNIFY-BACKEND
     [ ] API
     [ ] Controler
     [ ] Log 
+
+
+[ ]  Service 
+    [ ] Service default false or not running
+    [ ] api path /services/:name/ -> /api/services/:name
+
+
+[ ] Change api respones json type
