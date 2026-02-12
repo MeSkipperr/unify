@@ -31,8 +31,8 @@ import {
     DialogHeader,
     DialogTitle,
 } from "@/components/ui/dialog"
-import { useState } from "react";
-import { handleIPv4Input } from "@/utils/ipv4";
+import { useEffect, useState } from "react";
+import { handleIPv4Input, isValidIPv4 } from "@/utils/ipv4";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Controller } from "react-hook-form";
@@ -42,6 +42,7 @@ import { PortForwardFormValues, PortForwardSchemas } from "../schemas/port-forwa
 import { EXPIRE_OPTIONS } from "../types";
 import { createPortForward, createPortForwardPayload } from "../api/port-forward.api";
 import { convertToDate } from "../utils/date";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 
 type NewDataProps = {
     handleFetchData: () => Promise<void>
@@ -49,28 +50,51 @@ type NewDataProps = {
 
 
 const NewDataTable = ({ handleFetchData }: NewDataProps) => {
+    const searchParams = useSearchParams();
+    const router = useRouter();
+    const pathname = usePathname();
+
     const [isOpen, setIsOpen] = useState<boolean>(false);
     const [isUnsavedDialogOpen, setIsUnsavedDialogOpen] = useState(false);
     const [isLoading, setIsLoading] = useState<boolean>(false);
 
+
+
     const {
         register,
         handleSubmit,
-        setValue,
         reset,
+        setValue,
         control,
         watch,
-        formState: { errors, isSubmitting },
+        formState: { errors },
     } = useForm<PortForwardFormValues>({
         resolver: zodResolver(PortForwardSchemas),
         defaultValues: {
             destIp: "",
             destPort: 80,
-            listenIp: "",
+            listenIp: "", // ambil dari param ?listen-ip=192.168.160.184
             protocol: "tcp",
             ruleComment: ""
         },
     });
+
+    useEffect(() => {
+        const listenIpParam = searchParams.get("listen-ip");
+
+        if (!listenIpParam) return;
+
+        if (listenIpParam && isValidIPv4(listenIpParam)) {
+            setValue("listenIp", listenIpParam); // isi form
+            setIsOpen(true); // buka modal / section
+        } else {
+            const params = new URLSearchParams(searchParams.toString());
+            params.delete("listen-ip");
+
+            router.replace(`${pathname}?${params.toString()}`);
+        }
+
+    }, [searchParams,pathname,router,setValue]);
 
     const watchedValues = watch();
 
