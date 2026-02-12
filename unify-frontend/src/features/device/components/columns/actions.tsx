@@ -1,9 +1,7 @@
 import {
     Sheet,
-    SheetClose,
     SheetContent,
     SheetDescription,
-    SheetFooter,
     SheetHeader,
     SheetTitle,
     SheetTrigger,
@@ -32,8 +30,6 @@ import { Button } from "@/components/ui/button";
 import { EllipsisVertical } from "lucide-react";
 import { Label } from "@radix-ui/react-label";
 import { DeviceStatus } from "@/components/status";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import Link from "next/link";
 import { deleteDevice } from "../../api/device.api";
 import { Device } from "../../types";

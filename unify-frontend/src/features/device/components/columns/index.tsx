@@ -2,51 +2,13 @@
 'use client'
 
 import { ColumnDef } from '@tanstack/react-table'
-import { Button } from '@/components/ui/button'
-import { EllipsisVertical } from 'lucide-react'
 import { Device } from '../../types'
 import { DeviceStatus } from '@/components/status'
-import { formatDateTime, getCompactRelativeTime } from '@/utils/time'
 
-import {
-    Sheet,
-    SheetClose,
-    SheetContent,
-    SheetDescription,
-    SheetFooter,
-    SheetHeader,
-    SheetTitle,
-    SheetTrigger,
-} from "@/components/ui/sheet"
-
-import {
-    AlertDialog,
-    AlertDialogAction,
-    AlertDialogCancel,
-    AlertDialogContent,
-    AlertDialogDescription,
-    AlertDialogFooter,
-    AlertDialogHeader,
-    AlertDialogTitle,
-    AlertDialogTrigger,
-} from "@/components/ui/alert-dialog"
-
-import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuItem,
-    DropdownMenuLabel,
-    DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
 import { Label } from '@radix-ui/react-label'
-import Link from 'next/link'
-import { Input } from '@/components/ui/input'
-import { Textarea } from '@/components/ui/textarea'
-
 
 import { NotificationToggle } from '../notification-toogle'
-import { deleteDevice } from '../../api/device.api'
-import ActionsColums from './actions'
+import { getCompactRelativeTime } from '@/utils/time'
 
 
 export const columns: ColumnDef<Device>[] =

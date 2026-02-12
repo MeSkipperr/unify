@@ -111,12 +111,6 @@ export default function AppSidebar() {
                                 </SidebarMenuButton>
                             </SidebarMenuItem>
 
-                            {/* Others */}
-                            <SidebarMenuItem>
-                                <SidebarMenuButton asChild className="font-bold">
-                                    <Link href="/logs">Logs</Link>
-                                </SidebarMenuButton>
-                            </SidebarMenuItem>
 
                             <SidebarMenuItem>
                                 <SidebarMenuButton asChild className="font-bold">
@@ -124,11 +118,6 @@ export default function AppSidebar() {
                                 </SidebarMenuButton>
                             </SidebarMenuItem>
 
-                            <SidebarMenuItem>
-                                <SidebarMenuButton asChild className="font-bold">
-                                    <Link href="/system">System</Link>
-                                </SidebarMenuButton>
-                            </SidebarMenuItem>
 
                         </SidebarMenu>
                     </SidebarGroupContent>

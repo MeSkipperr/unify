@@ -8,7 +8,7 @@ export const useMTR = (url: string) => {
     const wsRef = useRef<WebSocket | null>(null)
 
     useEffect(() => {
-        if (wsRef.current) return 
+        if (wsRef.current) return
 
         const ws = new WebSocket(url)
         wsRef.current = ws
@@ -26,7 +26,7 @@ export const useMTR = (url: string) => {
         }
 
         ws.onerror = () => {
-            
+
             toast.error("WebSocket error", { position: "bottom-right" })
         }
 
