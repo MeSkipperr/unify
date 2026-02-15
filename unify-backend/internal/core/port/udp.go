@@ -38,7 +38,7 @@ func checkUDP(p Params) Result {
 	}
 
 	// Try to read (optional)
-	_ = conn.SetReadDeadline(time.Now().Add(p.Timeout))
+	_ = conn.SetReadDeadline(time.Now().UTC().Add(p.Timeout))
 	buf := make([]byte, 1)
 	_, err = conn.Read(buf)
 

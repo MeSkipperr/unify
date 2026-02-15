@@ -15,7 +15,6 @@ import (
 	"gorm.io/gorm"
 )
 
-
 func handleExpiry(s *models.SessionPortForward, now time.Time) {
 	if s.Status == models.SessionStatusDeactivated {
 		s.Status = models.SessionStatusInactive
@@ -96,7 +95,7 @@ func startSyncSessionPortForwardWorker(db *gorm.DB, interval time.Duration) {
 
 	for range ticker.C {
 		var sessions []models.SessionPortForward
-		now := time.Now()
+		now := time.Now().UTC()
 
 		if err := db.Where(
 			"status IN ?",
@@ -117,7 +116,7 @@ func startSyncSessionPortForwardWorker(db *gorm.DB, interval time.Duration) {
 }
 
 type portForwardConfig struct {
-	SyncInterval   int `json:"sync_interval"`
+	SyncInterval int `json:"sync_interval"`
 }
 
 func RunPortForwardSession(manager *worker.Manager) (*worker.Worker, error) {

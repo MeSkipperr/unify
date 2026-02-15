@@ -10,7 +10,7 @@ import (
 
 func LoggerMiddleware(service string) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		start := time.Now()
+		start := time.Now().UTC()
 		path := c.Request.URL.Path
 
 		// proses request

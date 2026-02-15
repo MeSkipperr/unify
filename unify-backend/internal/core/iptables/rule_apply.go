@@ -21,7 +21,7 @@ func ApplyRule(s *models.SessionPortForward) error {
 		return err
 	}
 
-	now := time.Now()
+	now := time.Now().UTC()
 	s.LastAppliedAt = &now
 	return nil
 }

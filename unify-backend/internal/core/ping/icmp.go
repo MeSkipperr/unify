@@ -10,19 +10,19 @@ import (
 )
 
 type Params struct {
-	Target string        // destination IP / hostname
-	Source string        // optional source IP (linux)
-	Times  int           // number of echo requests
+	Target  string // destination IP / hostname
+	Source  string // optional source IP (linux)
+	Times   int    // number of echo requests
 	Timeout time.Duration
 }
 
 type Result struct {
-	Target   string          `json:"target"`
-	Source   string          `json:"source,omitempty"`
-	Times    int             `json:"times"`
-	Replies  int             `json:"replies"`
-	RTTs     []time.Duration `json:"rtts"`
-	Error    string          `json:"error,omitempty"`
+	Target  string          `json:"target"`
+	Source  string          `json:"source,omitempty"`
+	Times   int             `json:"times"`
+	Replies int             `json:"replies"`
+	RTTs    []time.Duration `json:"rtts"`
+	Error   string          `json:"error,omitempty"`
 }
 
 // Ping sends ICMP Echo Requests using raw packets
@@ -68,14 +68,14 @@ func Ping(p Params) Result {
 		}
 
 		data, _ := msg.Marshal(nil)
-		start := time.Now()
+		start := time.Now().UTC()
 
 		_, err := conn.WriteTo(data, ipAddr)
 		if err != nil {
 			continue
 		}
 
-		_ = conn.SetReadDeadline(time.Now().Add(p.Timeout))
+		_ = conn.SetReadDeadline(time.Now().UTC().Add(p.Timeout))
 		buf := make([]byte, 1500)
 
 		n, _, err := conn.ReadFrom(buf)

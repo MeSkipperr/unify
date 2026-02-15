@@ -95,7 +95,7 @@ func updateMtrSessionLastRun(data mtrSessionParms) error {
 		return result.Error
 	}
 
-	now := time.Now()
+	now := time.Now().UTC()
 
 	session.LastRunAt = &now
 	return data.db.Save(&session).Error
@@ -196,7 +196,7 @@ func checkReachableStatus(data mtrSessionParms) {
 			"MTR Session Notice: Destination %s (Session ID: %s) is now reachable. Recovery detected at %s.",
 			session.DestinationIP,
 			session.ID,
-			time.Now().Format("02/01/2006 15:04:05"),
+			time.Now().UTC().Format("02/01/2006 15:04:05"),
 		))
 		updateStatusReachableSession(session, true)
 		sendConnectionAlertNotification(data, true)
@@ -205,7 +205,7 @@ func checkReachableStatus(data mtrSessionParms) {
 
 func sendPacketUseWebsocket(data mtrSessionParms) {
 	msg := ws.Message{
-		Time:    time.Now(),
+		Time:    time.Now().UTC(),
 		ID:      data.session.ID.String(),
 		Message: data.out,
 	}
@@ -252,7 +252,7 @@ func startSyncSessionMTRWorker(db *gorm.DB, config MTRSessionConfig, manager *wo
 				services.LogError(ServiceMTRSession, "Failed to save MTR result for session ID "+s.ID.String()+": "+err.Error())
 				return
 			}
-			
+
 			err = updateMtrSessionLastRun(params)
 			if err != nil {
 				services.LogError(ServiceMTRSession, "Failed to update last run for session ID "+s.ID.String()+": "+err.Error())

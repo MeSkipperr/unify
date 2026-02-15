@@ -66,7 +66,7 @@ func GetMTRResult() gin.HandlerFunc {
 func DisableMTRSession() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		id := c.Param("id")
-		now := time.Now()
+		now := time.Now().UTC()
 
 		result := database.DB.Model(&models.MTRSession{}).
 			Where("id = ? AND status = ?", id, "active").

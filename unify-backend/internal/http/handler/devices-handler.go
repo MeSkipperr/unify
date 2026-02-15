@@ -119,7 +119,7 @@ func CreateDevice() gin.HandlerFunc {
 			IsConnect:         false,
 			ErrorCount:        0,
 			Notification:      true,
-			Status_updated_at: time.Now(),
+			Status_updated_at: time.Now().UTC(),
 		}
 
 		if err := database.DB.Create(&device).Error; err != nil {

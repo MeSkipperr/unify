@@ -1,7 +1,6 @@
 package http
 
 import (
-	"fmt"
 	"net/http"
 	"time"
 
@@ -10,6 +9,7 @@ import (
 	"unify-backend/cmd"
 	"unify-backend/internal/http/handler"
 	"unify-backend/internal/http/middleware"
+	"unify-backend/internal/http/sse"
 	"unify-backend/internal/services"
 	"unify-backend/internal/worker"
 	"unify-backend/internal/ws"
@@ -20,6 +20,7 @@ import (
 type Handler struct {
 	manager *worker.Manager
 	wsHub   *ws.Hub
+	sse     *sse.SSEManager
 }
 
 type StatusPayload struct {
@@ -39,9 +40,14 @@ type User struct {
 }
 
 func NewHandler(m *worker.Manager) *gin.Engine {
+	sseManager := m.GetSSE()
+	if sseManager == nil {
+		sseManager = sse.NewSSEManager()
+	}
 	h := &Handler{
 		manager: m,
 		wsHub:   ws.NewHub(),
+		sse:     sseManager,
 	}
 
 	router := gin.Default()
@@ -65,51 +71,70 @@ func NewHandler(m *worker.Manager) *gin.Engine {
 		auth.POST("/me", services.Me)
 	}
 
-	api := router.Group("/api", middleware.AuthMiddleware)
-
+	events := router.Group("/events")
 	{
-		api.POST("/users", func(c *gin.Context) {
-			var newUser User
-			if err := c.ShouldBindJSON(&newUser); err != nil {
-				c.JSON(http.StatusBadRequest, gin.H{"error": "invalid JSON payload"})
-				return
-			}
-			fmt.Println("Payload struct:", newUser.Username)
-			fmt.Println("Payload struct:", newUser.Password)
-
-			c.JSON(http.StatusOK, gin.H{
-				"message": "user received",
-				"user":    newUser,	
-			})
+		events.GET("/adb", func(c *gin.Context) {
+			h.sse.Subscribe(c.Writer, c.Request, sse.SSEChannelServices)
 		})
-		api.GET("/devices", handler.GetDevices)
-		api.PATCH("/devices/:id/notification", handler.ChangeNotification())
-		api.POST("/devices", handler.CreateDevice())
-		api.DELETE("/devices/:id", handler.DeleteDevice())
-		api.PUT("/devices/:id", handler.ChangeDevice())
+	}
 
-		api.GET("/services", handler.GetServices())
-		api.GET("/services/:serviceName", handler.GetServiceByName())
-		api.GET("/services/adb", handler.GetAdbResults)
+	api := router.Group("/api", middleware.AuthMiddleware)
+	{
+		// =========================
+		// DEVICES
+		// =========================
+		devices := api.Group("/devices")
+		{
+			devices.GET("", handler.GetDevices)
+			devices.POST("", handler.CreateDevice())
+			devices.PUT("/:id", handler.ChangeDevice())
+			devices.DELETE("/:id", handler.DeleteDevice())
+			devices.PATCH("/:id/notification", handler.ChangeNotification())
+		}
 
-		api.GET("/services/speedtest", handler.GetSpeedtestByInternalIPAndServer())
+		// =========================
+		// SERVICES
+		// =========================
+		services := api.Group("/services")
+		{
+			services.GET("", handler.GetServices())
+			services.GET("/:serviceName", handler.GetServiceByName())
 
-		api.GET("/services/mtr-sessions/active",handler.GetActiveMTRSessions())
-		api.POST("/services/mtr-sessions",handler.CreateMTRSession())
-		api.PUT("/services/mtr-sessions",handler.DisableMTRSession())
+			// ----- ADB -----
+			adb := services.Group("/adb")
+			{
+				adb.GET("", handler.GetAdbResults)
+				adb.POST("", handler.CreateADBJob())
+			}
 
-		api.GET("/services/mtr-sessions/result/:id",handler.GetMTRResult())
+			// ----- SPEEDTEST -----
+			speedtest := services.Group("/speedtest")
+			{
+				speedtest.GET("", handler.GetSpeedtestByInternalIPAndServer())
+			}
 
-		api.GET("/services/port-forward", handler.GetPortForward())
-		api.POST("/services/port-forward", handler.CreatePortForward())
-		api.PATCH("/services/port-forward/:id/deactivate", handler.DeactivatedPortForward())
+			// ----- MTR -----
+			mtr := services.Group("/mtr-sessions")
+			{
+				mtr.GET("/active", handler.GetActiveMTRSessions())
+				mtr.POST("", handler.CreateMTRSession())
+				mtr.PUT("", handler.DisableMTRSession())
+				mtr.GET("/result/:id", handler.GetMTRResult())
+			}
 
+			// ----- PORT FORWARD -----
+			portForward := services.Group("/port-forward")
+			{
+				portForward.GET("", handler.GetPortForward())
+				portForward.POST("", handler.CreatePortForward())
+				portForward.PATCH("/:id/deactivate", handler.DeactivatedPortForward())
+			}
+		}
 	}
 
 	// Existing HTTP endpoints
 	router.GET("/services/:service/status", h.getStatus)
 	router.PUT("/services/:service/status", h.updateStatus)
-
 
 	return router
 }
@@ -126,7 +151,7 @@ func (h *Handler) getStatus(c *gin.Context) {
 	c.JSON(http.StatusOK, StatusResponse{
 		Service: service,
 		Status:  status,
-		At:      time.Now(),
+		At:      time.Now().UTC(),
 	})
 }
 
@@ -171,7 +196,7 @@ func (h *Handler) updateStatus(c *gin.Context) {
 	c.JSON(http.StatusOK, StatusResponse{
 		Service: service,
 		Status:  payload.Status,
-		At:      time.Now(),
+		At:      time.Now().UTC(),
 	})
 }
 

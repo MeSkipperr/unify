@@ -111,7 +111,7 @@ func updateDeviceStatus(
 		Updates(map[string]interface{}{
 			"is_connect":        isConnect,
 			"error_count":       errorCount,
-			"status_updated_at": time.Now(),
+			"status_updated_at": time.Now().UTC(),
 		})
 
 	if result.Error != nil {
@@ -124,7 +124,6 @@ func updateDeviceStatus(
 
 	return nil
 }
-
 
 func processConnection(dev models.Devices, maxTimes int) {
 	prevErrorCount := dev.ErrorCount
@@ -146,12 +145,12 @@ func processConnection(dev models.Devices, maxTimes int) {
 	if prevIsConnect && dev.ErrorCount == maxTimes {
 		newIsConnect = false
 		sendNotification(dev, false)
-		services.LogInfo(ServiceMonitoringNetwork, "Device down: " + dev.Name)
+		services.LogInfo(ServiceMonitoringNetwork, "Device down: "+dev.Name)
 	} else if !prevIsConnect && dev.ErrorCount == 0 {
-	 // RECOVER (dari disconnect → connect)
+		// RECOVER (dari disconnect → connect)
 		newIsConnect = true
 		sendNotification(dev, true)
-		services.LogInfo(ServiceMonitoringNetwork, "Device recovered: " + dev.Name)
+		services.LogInfo(ServiceMonitoringNetwork, "Device recovered: "+dev.Name)
 	}
 
 	// ⛔ tidak ada perubahan → stop
@@ -161,7 +160,7 @@ func processConnection(dev models.Devices, maxTimes int) {
 
 	// update DB
 	if err := updateDeviceStatus(dev.ID, newIsConnect, dev.ErrorCount); err != nil {
-		services.LogError(ServiceMonitoringNetwork, "Failed to update device status: " + err.Error())
+		services.LogError(ServiceMonitoringNetwork, "Failed to update device status: "+err.Error())
 	}
 }
 

@@ -19,8 +19,8 @@ func GenerateAccessToken(userID, name, secret string) (string, error) {
 		Name: name,
 		Type: "access",
 		RegisteredClaims: jwt.RegisteredClaims{
-			IssuedAt:  jwt.NewNumericDate(time.Now()),
-			ExpiresAt: jwt.NewNumericDate(time.Now().Add(15 * time.Minute)),
+			IssuedAt:  jwt.NewNumericDate(time.Now().UTC()),
+			ExpiresAt: jwt.NewNumericDate(time.Now().UTC().Add(15 * time.Minute)),
 		},
 	}
 
@@ -33,8 +33,8 @@ func GenerateRefreshToken(userID, secret string) (string, error) {
 		Sub:  userID,
 		Type: "refresh",
 		RegisteredClaims: jwt.RegisteredClaims{
-			IssuedAt:  jwt.NewNumericDate(time.Now()),
-			ExpiresAt: jwt.NewNumericDate(time.Now().Add(7 * 24 * time.Hour)),
+			IssuedAt:  jwt.NewNumericDate(time.Now().UTC()),
+			ExpiresAt: jwt.NewNumericDate(time.Now().UTC().Add(7 * 24 * time.Hour)),
 		},
 	}
 
@@ -59,4 +59,3 @@ func VerifyJWT(tokenStr, secret string) (*models.JWTClaims, error) {
 
 	return claims, nil
 }
-

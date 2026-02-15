@@ -102,8 +102,8 @@ func GetUptimeADB(manager *worker.Manager) (*worker.Worker, error) {
 
 				adbResult = append(adbResult, models.AdbResult{
 					Status:     status,
-					StartTime:  time.Now(),
-					FinishTime: time.Now(),
+					StartTime:  time.Now().UTC(),
+					FinishTime: time.Now().UTC(),
 					IPAddress:  dev.IPAddress,
 					Port:       adbConfig.ADBPort,
 					NameDevice: dev.Name,
@@ -120,12 +120,12 @@ func GetUptimeADB(manager *worker.Manager) (*worker.Worker, error) {
 					if adbResult[i].Status == adb.StatusSuccess || adbResult[i].Status == adb.StatusNotConnected {
 						continue
 					}
-					startedAt := time.Now()
+					startedAt := time.Now().UTC()
 					resStatus, value := processGetUptime(adbResult[i], adbConfig)
 					services.LogInfo(ServiceGetUptimeADB, "Device "+adbResult[i].NameDevice+" - "+fmt.Sprintf("%v", resStatus)+" - "+value)
 
 					adbResult[i].Status = resStatus
-					adbResult[i].FinishTime = time.Now()
+					adbResult[i].FinishTime = time.Now().UTC()
 					adbResult[i].StartTime = startedAt
 					adbResult[i].Result = value
 					adbResult[i].TypeServices = ServiceGetUptimeADB

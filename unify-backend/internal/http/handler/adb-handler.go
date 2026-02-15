@@ -1,17 +1,27 @@
 package handler
 
 import (
+	"fmt"
 	"math"
 	"net/http"
 	"strconv"
 	"strings"
+	"time"
 
+	"unify-backend/internal/adb"
 	"unify-backend/internal/database"
+	"unify-backend/internal/job"
+	"unify-backend/internal/queue"
 	"unify-backend/models"
 
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
 )
+
+type AdbResultWithIndex struct {
+	models.AdbResult
+	Index int `json:"index" gorm:"-"`
+}
 
 func GetAdbResults(c *gin.Context) {
 
@@ -66,7 +76,7 @@ func GetAdbResultsPaginated(
 	search string,
 	date string,
 ) (
-	data []models.AdbResult,
+	data []AdbResultWithIndex,
 	total int64,
 	totalPage int,
 	err error,
@@ -102,43 +112,50 @@ func GetAdbResultsPaginated(
 		return
 	}
 
-	// =====================
-	// SORT
-	// =====================
-	allowedSort := map[string]string{
-		"start_time":  "start_time",
-		"finish_time": "finish_time",
-	}
-
-	if sort != "" {
-		sorts := strings.Split(sort, ",")
-		for _, s := range sorts {
-			parts := strings.Split(s, ":")
-			if len(parts) != 2 {
-				continue
-			}
-
-			field := parts[0]
-			order := strings.ToUpper(parts[1])
-
-			if col, ok := allowedSort[field]; ok {
-				if order != "ASC" && order != "DESC" {
-					order = "ASC"
-				}
-				query = query.Order(col + " " + order)
-			}
-		}
-	} else {
-		// default
-		query = query.Order("start_time DESC")
-	}
-
 	if date != "" {
 		query = query.Where(
 			"DATE(start_time) = ?", date,
 		)
 	}
+	// =====================
+	// SORT
+	// =====================
 
+	if sort != "" {
+		allowedSort := map[string]string{
+			"startTime":  "start_time",
+			"finishTime": "finish_time",
+		}
+
+		orders := strings.Split(sort, ",")
+
+		for _, order := range orders {
+			part := strings.Split(order, ":")
+			if len(part) != 2 {
+				continue
+			}
+
+			columnKey := strings.TrimSpace(part[0])
+			directionRaw := strings.ToUpper(strings.TrimSpace(part[1]))
+
+			column, ok := allowedSort[columnKey]
+			if !ok {
+				continue
+			}
+
+			var dir string
+			switch directionRaw {
+			case "DESC", "DESCENDING":
+				dir = "DESC"
+			case "ASC", "ASCENDING":
+				dir = "ASC"
+			default:
+				dir = "ASC"
+			}
+
+			db = query.Order(column + " " + dir)
+		}
+	}
 	// =====================
 	// FETCH DATA
 	// =====================
@@ -152,6 +169,63 @@ func GetAdbResultsPaginated(
 		return
 	}
 
+	for i := range data {
+		data[i].Index = offset + i + 1
+	}
+
 	totalPage = int(math.Ceil(float64(total) / float64(pageSize)))
 	return
+}
+
+func CreateADBJob() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		var payload struct {
+			IPAddress string `json:"ipAddress" binding:"required"`
+			Port      int    `json:"port" binding:"required"`
+			Command   string `json:"command" binding:"required"`
+			Name      string `json:"name" binding:"required"`
+		}
+
+		if err := c.ShouldBindJSON(&payload); err != nil {
+			fmt.Println("Error binding JSON:", err)
+			c.JSON(http.StatusBadRequest, gin.H{
+				"error": err.Error(),
+			})
+			return
+		}
+
+		now := time.Now().UTC()
+
+		data := models.AdbResult{
+			Status:       adb.StatusNotStarted,
+			FinishTime:   now,
+			StartTime:    now,
+			IPAddress:    payload.IPAddress,
+			Port:         payload.Port,
+			NameDevice:   payload.Name,
+			Result:       "",
+			TypeServices: "manual",
+			Command:      payload.Command,
+		}
+
+		if err := database.DB.Create(&data).Error; err != nil {
+			c.JSON(500, gin.H{"error": err.Error()})
+			return
+		}
+
+		newJob := job.ADBJob{
+			ID:        data.ID,
+			Command:   payload.Command,
+			IPAddress: payload.IPAddress,
+			Port:      payload.Port,
+			Name:      payload.Name,
+		}
+
+		queue.EnqueueADB(newJob)
+
+		c.JSON(http.StatusCreated, gin.H{
+			"message": "ADB Job created successfully.",
+			"data":    newJob,
+		})
+	}
 }

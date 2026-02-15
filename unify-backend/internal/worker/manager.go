@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"sync"
 	"unify-backend/internal/database"
+	"unify-backend/internal/http/sse"
 	"unify-backend/internal/ws"
 	"unify-backend/models"
 )
@@ -14,6 +15,19 @@ type Manager struct {
 	workers   map[string]*Worker
 	status    map[string]Status
 	setMTRhub *ws.Hub
+	sse       *sse.SSEManager
+}
+
+func (m *Manager) SetSSE(s *sse.SSEManager) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	m.sse = s
+}
+
+func (m *Manager) GetSSE() *sse.SSEManager {
+	m.mu.RLock()
+	defer m.mu.RUnlock()
+	return m.sse
 }
 
 func NewManager() *Manager {

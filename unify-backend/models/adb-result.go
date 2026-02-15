@@ -14,8 +14,8 @@ type AdbResult struct {
 	FinishTime   time.Time     `gorm:"not null"`
 	IPAddress    string        `gorm:"size:45;not null"`
 	Port         int           `gorm:"not null"`
-	NameDevice   string        `gorm:"size:100;uniqueIndex;not null"`
+	NameDevice   string        `gorm:"size:100;not null"`
 	Result       string        `gorm:"type:text"`
 	TypeServices string        `gorm:"type:text;not null"`
-
+	Command      string        `gorm:"type:text"`
 }

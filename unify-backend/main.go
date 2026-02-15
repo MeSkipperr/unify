@@ -7,6 +7,8 @@ import (
 	"unify-backend/config"
 	"unify-backend/internal/database"
 	api "unify-backend/internal/http"
+	"unify-backend/internal/http/sse"
+	"unify-backend/internal/queue"
 	"unify-backend/internal/worker"
 	"unify-backend/internal/ws"
 
@@ -23,6 +25,11 @@ func main() {
 	database.Migrate()
 
 	manager := worker.NewManager()
+	sseManager := sse.NewSSEManager()
+	manager.SetSSE(sseManager)
+
+	queue.InitADBQueue(16)
+	worker.StartADBWorkerPool(manager, 1, queue.GetADBQueue())
 
 	errs := worker.RegisterWorkersContinue(manager, []worker.WorkerFactory{
 		cmd.MonitoringNetwork,

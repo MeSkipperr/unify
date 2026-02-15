@@ -70,7 +70,7 @@ func GetSpeedtestNetwork(manager *worker.Manager) (*worker.Worker, error) {
 						continue
 					}
 					resultRecord := models.SpeedtestResult{
-						TestedAt: time.Now(),
+						TestedAt: time.Now().UTC(),
 
 						NetworkName:   network.Name,
 						InterfaceName: result.Interface.Name,
