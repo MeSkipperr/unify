@@ -6,7 +6,7 @@ export type AdbQuery =
     Pick<TableQuery, "page" | "pageSize" | "search"> & {
         typeServices?: string[]
         sort?: string[]
-        date?: Date | string
+        date?: Date | string 
     }
 
 

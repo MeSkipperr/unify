@@ -11,7 +11,6 @@ import { DatePicker } from "@/components/date-picker";
 import { updateFilterOption } from "@/features/device/utils/select-options";
 import { useSearchParams } from "next/navigation";
 import { AdbQuery, getAdbResults } from "../api/adb-result.api";
-import { formatDateTime } from "@/utils/time";
 
 const searchParameter = {
     id: "adb-search-bar",
@@ -21,9 +20,10 @@ const searchParameter = {
 }
 type AdbTableProps = {
     serviceType: string
+    hasDefaultValue?: boolean
 }
 
-const AdbTable = ({ serviceType }: AdbTableProps) => {
+const AdbTable = ({ serviceType, hasDefaultValue = false }: AdbTableProps) => {
     const searchParams = useSearchParams()
 
     const defaultFilter = updateFilterOption(dataFilter, "serviceType", serviceType)
@@ -32,7 +32,11 @@ const AdbTable = ({ serviceType }: AdbTableProps) => {
     const [filter, setFilter] = useState<FilterConfig[]>(defaultFilter);
     const [sort, setSort] = useState<SortBy[]>(sortData);
     const [isLoading, setIsLoading] = useState<boolean>(false);
-    const [date, setDate] = useState<Date>(new Date())
+    const [date, setDate] = useState<Date | undefined>(
+        hasDefaultValue ? new Date() : undefined
+    );
+
+
     const [totalData, setTotalData] = useState<number>(1);
 
     const handleFetchData = async (payload?: TableQuery) => {
@@ -71,19 +75,20 @@ const AdbTable = ({ serviceType }: AdbTableProps) => {
         try {
             const result = await getAdbResults(dataPayload)
             setTotalData(result.total)
-            const devices: AdbResult[] = result.data.map((item: any) => ({
+            const adbRes: AdbResult[] = result.data.map((item: any) => ({
                 id: item.ID,
                 index: item.index,
                 status: item.Status,
-                ipAddress: item.IPAddress,
-                finishTime: new Date(item.FinishTime),
-                startTime: new Date(item.StartTime),
+                ipAddress: item.IPAddress,  
+                finishTime: item.FinishTime,
+                startTime: item.StartTime,
                 port: item.Port,
                 deviceName: item.NameDevice,
                 result: item.Result,
                 serviceType: item.TypeServices
             }))
-            setData(devices)
+            setData(adbRes)
+            console.log(adbRes)
         } catch (err) {
             console.log(err)
         } finally {
@@ -93,7 +98,6 @@ const AdbTable = ({ serviceType }: AdbTableProps) => {
 
     useEffect(() => {
         if (!date) return
-        console.log(date)
 
         handleFetchData({
             date: new Date(date),

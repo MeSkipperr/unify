@@ -8,7 +8,7 @@ export default async function DeviceType({
     const { type } = await params
     return (
         <div className="h-[85dvh]">
-            <AdbTable serviceType={type}/>
+            <AdbTable serviceType={type} hasDefaultValue/>
         </div>
     )
 }

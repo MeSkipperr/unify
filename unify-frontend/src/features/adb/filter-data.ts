@@ -16,6 +16,6 @@ export const dataFilter: FilterConfig[] = [
 ]
 
 export const sortData: SortBy[] = [
-    { key: "startTime", label: "Start At", value: "ascending" },
-    { key: "finishTime", label: "Finish At", value: "none" },
+    { key: "startTime", label: "Start At", value: "none" },
+    { key: "finishTime", label: "Finish At", value: "descending" },
 ]

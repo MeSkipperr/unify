@@ -7,7 +7,25 @@ import { formatDateTime } from '@/utils/time'
 
 
 import { Label } from '@radix-ui/react-label'
+import { EllipsisVertical } from 'lucide-react'
 
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogHeader,
+    DialogTitle,
+    DialogTrigger,
+} from "@/components/ui/dialog"
+import { Button } from '@/components/ui/button'
+
+import {
+    CodeBlock,
+    CodeBlockBody,
+    CodeBlockContent,
+    CodeBlockItem,
+} from "@/components/kibo-ui/code-block";
+import type { BundledLanguage } from "shiki"
 
 export const columns: ColumnDef<AdbResult>[] =
     [
@@ -55,5 +73,51 @@ export const columns: ColumnDef<AdbResult>[] =
             cell: ({ row }) => (
                 <span>{formatDateTime(row.original.finishTime)}</span>
             )
+        },
+        {
+            accessorKey: 'result',
+            header: 'Result',
+            cell: ({ row }) => {
+                const code = [
+                    {
+                        language: "bash",
+                        filename: "",
+                        code: row.original.result,
+                    },
+                ];
+
+                return (
+                    <Dialog>
+                        <DialogTrigger asChild>
+                            <Button variant="ghost">
+                                <EllipsisVertical />
+                            </Button>
+                        </DialogTrigger>
+                        <DialogContent >
+                            <DialogHeader>
+                                <DialogTitle>{row.original.deviceName}</DialogTitle>
+                            </DialogHeader>
+                            <DialogDescription>
+                                Detailed command output from the selected device.
+                            </DialogDescription>
+                            <CodeBlock data={code} defaultValue={code[0].language}>
+                                <CodeBlockBody>
+                                    {(item) => (
+                                        <CodeBlockItem
+                                            key={item.language}
+                                            lineNumbers={false}
+                                            value={item.language}
+                                        >
+                                            <CodeBlockContent language={item.language as BundledLanguage}>
+                                                {item.code}
+                                            </CodeBlockContent>
+                                        </CodeBlockItem>
+                                    )}
+                                </CodeBlockBody>
+                            </CodeBlock>
+                        </DialogContent>
+                    </Dialog>
+                )
+            }
         },
     ]
