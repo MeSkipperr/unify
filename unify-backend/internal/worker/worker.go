@@ -111,11 +111,14 @@ func (w *Worker) WithRunOnce(v bool) *Worker {
 
 type WorkerFactory func(*Manager) (*Worker, error)
 
+var ManagerGlobal *Manager
+
 func RegisterWorkersContinue(
     manager *Manager,
     factories []WorkerFactory,
 ) []error {
     var errs []error
+	ManagerGlobal = manager
     for _, factory := range factories {
         w, err := factory(manager)
         if err != nil {
