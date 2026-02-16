@@ -8,6 +8,7 @@ import (
 	"time"
 	"unify-backend/internal/core/iptables"
 	"unify-backend/internal/database"
+	"unify-backend/internal/http/sse"
 	"unify-backend/internal/services"
 	"unify-backend/internal/worker"
 	"unify-backend/models"
@@ -50,13 +51,62 @@ func handleSessionState(db *gorm.DB, s *models.SessionPortForward) {
 	}
 }
 
-func sendRuleApplyed () {
-	
+func sendRuleApplied(level string, data *models.SessionPortForward) {
+	sseManager := worker.ManagerGlobal.GetSSE()
+	if sseManager == nil || data == nil {
+		return
+	}
+
+	listenAddr := fmt.Sprintf("%s:%d", data.ListenIP, data.ListenPort)
+	destAddr := fmt.Sprintf("%s:%d", data.DestIP, data.DestPort)
+
+	var title string
+	var detail string
+
+	switch level {
+	case "INFO":
+		title = "Port Forward Rule Applied"
+		detail = fmt.Sprintf(
+			"Port forwarding rule successfully applied: %s → %s (%s).",
+			listenAddr,
+			destAddr,
+			data.Protocol,
+		)
+
+	case "ERROR":
+		title = "Port Forward Rule Failed"
+		detail = fmt.Sprintf(
+			"Failed to apply port forwarding rule: %s → %s (%s).",
+			listenAddr,
+			destAddr,
+			data.Protocol,
+		)
+
+	default:
+		title = "Port Forward Rule Update"
+		detail = fmt.Sprintf(
+			"Port forwarding rule update: %s → %s (%s).",
+			listenAddr,
+			destAddr,
+			data.Protocol,
+		)
+	}
+
+	res := sse.NotificationEvent{
+		Level:     level,
+		Title:     title,
+		Detail:    detail,
+		URL:       listenAddr,
+		CreatedAT: data.CreatedAt,
+	}
+
+	sseManager.Broadcast(sse.SSEChannelNotif, res)
 }
 
 func handlePending(db *gorm.DB, s *models.SessionPortForward) {
 	if err := iptables.ApplyRule(s); err != nil {
 		s.Status = models.SessionStatusError
+		sendRuleApplied("ERROR", s)
 		services.LogError(
 			ServicePortForward,
 			fmt.Sprintf("failed to apply rule for session %s: %v", s.ID, err),
@@ -67,6 +117,8 @@ func handlePending(db *gorm.DB, s *models.SessionPortForward) {
 
 	s.Status = models.SessionStatusActive
 	db.Save(s)
+
+	sendRuleApplied("INFO", s)
 
 	services.LogInfo(
 		ServicePortForward,

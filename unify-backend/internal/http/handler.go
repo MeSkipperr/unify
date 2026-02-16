@@ -83,6 +83,9 @@ func NewHandler(m *worker.Manager) *gin.Engine {
 		events.GET("/services", func(c *gin.Context) {
 			h.sse.Subscribe(c.Writer, c.Request, sse.SSEChannelServices)
 		})
+		events.GET("/notification", func(c *gin.Context) {
+			h.sse.Subscribe(c.Writer, c.Request, sse.SSEChannelNotif)
+		})
 	}
 
 	api := router.Group("/api", middleware.AuthMiddleware)

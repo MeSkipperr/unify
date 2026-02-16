@@ -13,9 +13,11 @@ const (
 )
 
 type NotificationEvent struct {
-	Title  string `json:"title"`
-	Detail string `json:"detail"`
-	URL    string `json:"url"`
+	Level     string    `json:"level"`
+	Title     string    `json:"title"`
+	Detail    string    `json:"detail"`
+	URL       string    `json:"url"`
+	CreatedAT time.Time `json:"createdAt"`
 }
 
 type MtrEvent mtr.MtrResultJson
