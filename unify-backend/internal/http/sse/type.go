@@ -14,14 +14,6 @@ const (
 	SSEChannelMTR      = "mtr"
 )
 
-type NotificationEvent struct {
-	Level     string    `json:"level"`
-	Title     string    `json:"title"`
-	Detail    string    `json:"detail"`
-	URL       string    `json:"url"`
-	CreatedAT time.Time `json:"createdAt"`
-}
-
 type MtrEvent struct {
 	Time    time.Time         `json:"time"`
 	ID      uuid.UUID         `json:"id"`

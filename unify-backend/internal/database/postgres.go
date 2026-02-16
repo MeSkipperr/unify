@@ -60,6 +60,10 @@ func Migrate() {
 	if err != nil {
 		log.Fatal("failed to migrate Log:", err)
 	}
+	err = DB.AutoMigrate(&models.Notification{})
+	if err != nil {
+		log.Fatal("failed to migrate Notification:", err)
+	}
 	err = DB.AutoMigrate(
 		&models.MTRSession{},
 		&models.MTRResult{},

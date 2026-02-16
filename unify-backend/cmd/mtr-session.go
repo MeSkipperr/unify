@@ -144,10 +144,28 @@ func sendConnectionAlertNotification(data mtrSessionParms, isReachable bool) {
 	if data.session.SendNotification == false {
 		return
 	}
-	subject := fmt.Sprintf("[ALERT] Destination %s is UNREACHABLE ", data.session.DestinationIP)
+	var level models.NotificationLevel
+	var subject string
+
 	if isReachable {
-		subject = fmt.Sprintf("[ALERT] Destination %s is reachable ", data.session.DestinationIP)
+		level = models.NoticationStatusInfo
+		subject = fmt.Sprintf("[INFO] Destination %s is reachable", data.session.DestinationIP)
+	} else {
+		level = models.NoticationStatusAlert
+		subject = fmt.Sprintf("[ALERT] Destination %s is UNREACHABLE", data.session.DestinationIP)
 	}
+
+	notificationPayload := models.Notification{
+		Level: level,
+		Title: subject,
+		Detail: fmt.Sprintf(
+			"Connectivity check result for destination %s.",
+			data.session.DestinationIP,
+		),
+		URL: fmt.Sprintf("/services/trace-route/%s", data.session.ID.String()),
+	}
+
+	notification.SSENotification(notificationPayload)
 
 	notification.UserNotificationChannel(mailer.EmailData{
 		Subject: subject,
@@ -207,8 +225,8 @@ func sendPacketUseWebsocket(data mtrSessionParms) {
 	sseManager := worker.ManagerGlobal.GetSSE()
 
 	res := sse.MtrEvent{
-		Time: time.Now().UTC(),
-		ID: data.session.ID,
+		Time:    time.Now().UTC(),
+		ID:      data.session.ID,
 		Message: data.out,
 	}
 

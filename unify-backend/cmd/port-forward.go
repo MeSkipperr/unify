@@ -8,7 +8,7 @@ import (
 	"time"
 	"unify-backend/internal/core/iptables"
 	"unify-backend/internal/database"
-	"unify-backend/internal/http/sse"
+	"unify-backend/internal/notification"
 	"unify-backend/internal/services"
 	"unify-backend/internal/worker"
 	"unify-backend/models"
@@ -51,7 +51,7 @@ func handleSessionState(db *gorm.DB, s *models.SessionPortForward) {
 	}
 }
 
-func sendRuleApplied(level string, data *models.SessionPortForward) {
+func sendRuleApplied(level models.NotificationLevel, data *models.SessionPortForward) {
 	sseManager := worker.ManagerGlobal.GetSSE()
 	if sseManager == nil || data == nil {
 		return
@@ -64,7 +64,7 @@ func sendRuleApplied(level string, data *models.SessionPortForward) {
 	var detail string
 
 	switch level {
-	case "INFO":
+	case models.NoticationStatusInfo:
 		title = "Port Forward Rule Applied"
 		detail = fmt.Sprintf(
 			"Port forwarding rule successfully applied: %s → %s (%s).",
@@ -73,7 +73,7 @@ func sendRuleApplied(level string, data *models.SessionPortForward) {
 			data.Protocol,
 		)
 
-	case "ERROR":
+	case models.NoticationStatusError:
 		title = "Port Forward Rule Failed"
 		detail = fmt.Sprintf(
 			"Failed to apply port forwarding rule: %s → %s (%s).",
@@ -92,21 +92,21 @@ func sendRuleApplied(level string, data *models.SessionPortForward) {
 		)
 	}
 
-	res := sse.NotificationEvent{
+	notificationPayload := models.Notification{
 		Level:     level,
 		Title:     title,
 		Detail:    detail,
 		URL:       listenAddr,
-		CreatedAT: data.CreatedAt,
+		CreatedAt: data.CreatedAt,
 	}
 
-	sseManager.Broadcast(sse.SSEChannelNotif, res)
+	notification.SSENotification(notificationPayload)
 }
 
 func handlePending(db *gorm.DB, s *models.SessionPortForward) {
 	if err := iptables.ApplyRule(s); err != nil {
 		s.Status = models.SessionStatusError
-		sendRuleApplied("ERROR", s)
+		sendRuleApplied(models.NoticationStatusError, s)
 		services.LogError(
 			ServicePortForward,
 			fmt.Sprintf("failed to apply rule for session %s: %v", s.ID, err),
@@ -118,7 +118,7 @@ func handlePending(db *gorm.DB, s *models.SessionPortForward) {
 	s.Status = models.SessionStatusActive
 	db.Save(s)
 
-	sendRuleApplied("INFO", s)
+	sendRuleApplied(models.NoticationStatusInfo, s)
 
 	services.LogInfo(
 		ServicePortForward,
