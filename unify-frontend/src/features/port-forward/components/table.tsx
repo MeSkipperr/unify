@@ -11,7 +11,6 @@ import NewDataTable from "./new-data"
 import { TableQuery } from "@/components/table/types"
 import { useSearchParams } from "next/navigation"
 import { getPortForward, PortForwardQuery } from "../api/port-forward.api"
-import ActionsColumns from "@/features/device/components/columns/actions"
 import { ColumnDef } from "@tanstack/react-table"
 import DisablePortForward from "./actions"
 
@@ -21,83 +20,6 @@ const searchParameter = {
     description: "Search devices by IP address",
     placeholder: "e.g. 192.168.1.10 "
 }
-
-// export const portForwardDummy: PortForwardResult[] = [
-//     {
-//         id: "as",
-//         index: 1,
-//         listenIp: "0.0.0.0",
-//         listenPort: 8080,
-//         destIp: "192.168.1.10",
-//         destPort: 80,
-//         protocol: "TCP",
-//         startTime: new Date("2026-02-10T08:00:00Z"),
-//         finishTime: new Date("2026-02-10T10:00:00Z"),
-//         status: "running",
-//         createdAt: new Date("2026-02-10T07:55:00Z"),
-//         expiredAt: new Date("2026-02-10T12:00:00Z"),
-//     },
-//     {
-//         id: "as",
-//         index: 2,
-//         listenIp: "127.0.0.1",
-//         listenPort: 2222,
-//         destIp: "192.168.1.20",
-//         destPort: 22,
-//         protocol: "TCP",
-//         startTime: new Date("2026-02-10T06:30:00Z"),
-//         finishTime: new Date("2026-02-10T07:45:00Z"),
-//         status: "finished",
-//         createdAt: new Date("2026-02-10T06:25:00Z"),
-//         expiredAt: new Date("2026-02-10T08:00:00Z"),
-//     },
-//     {
-//         id: "as",
-
-//         index: 3,
-//         listenIp: "0.0.0.0",
-//         listenPort: 3307,
-//         destIp: "10.0.0.5",
-//         destPort: 3306,
-//         protocol: "TCP",
-//         startTime: new Date("2026-02-10T09:00:00Z"),
-//         finishTime: new Date("2026-02-10T09:20:00Z"),
-//         status: "failed",
-//         createdAt: new Date("2026-02-10T08:58:00Z"),
-//         expiredAt: new Date("2026-02-10T09:30:00Z"),
-//     },
-//     {
-//         id: "as",
-
-//         index: 4,
-//         listenIp: "0.0.0.0",
-//         listenPort: 5353,
-//         destIp: "224.0.0.251",
-//         destPort: 5353,
-//         protocol: "UDP",
-//         startTime: new Date("2026-02-10T05:00:00Z"),
-//         finishTime: new Date("2026-02-10T11:00:00Z"),
-//         status: "running",
-//         createdAt: new Date("2026-02-10T04:55:00Z"),
-//         expiredAt: new Date("2026-02-10T13:00:00Z"),
-//     },
-//     {
-//         id: "as",
-
-//         index: 5,
-//         listenIp: "192.168.1.1",
-//         listenPort: 9000,
-//         destIp: "192.168.1.50",
-//         destPort: 9000,
-//         protocol: "TCP",
-//         startTime: new Date("2026-02-10T01:00:00Z"),
-//         finishTime: new Date("2026-02-10T03:00:00Z"),
-//         status: "expired",
-//         createdAt: new Date("2026-02-10T00:55:00Z"),
-//         expiredAt: new Date("2026-02-10T03:00:00Z"),
-//     },
-// ]
-
 
 const PortForwardTable = () => {
     const searchParams = useSearchParams()
@@ -189,6 +111,7 @@ const PortForwardTable = () => {
                 columns={finalColumns}
                 data={data}
                 filter={filter}
+                defaultFilter={dataFilter}
                 setFilter={setFilter}
                 handleFetchData={handleFetchData}
                 isLoading={isLoading}
@@ -196,6 +119,7 @@ const PortForwardTable = () => {
                 setIsLoading={setIsLoading}
                 setSort={setSort}
                 sort={sort}
+                defaultSort={sortData}
                 totalData={totalData}
                 addNewData={<NewDataTable handleFetchData={handleFetchData} />}
 

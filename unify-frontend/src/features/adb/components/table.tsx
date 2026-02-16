@@ -42,6 +42,7 @@ const AdbTable = ({ serviceType, hasDefaultValue = false, addNewData = false }: 
     const [totalData, setTotalData] = useState<number>(1);
 
     const handleFetchData = async (payload?: TableQuery) => {
+        console.log("date", date)
         setIsLoading(false)
 
         const page = payload?.page ?? Number(searchParams.get("page")) ?? 1
@@ -54,6 +55,8 @@ const AdbTable = ({ serviceType, hasDefaultValue = false, addNewData = false }: 
             search,
             date
         }
+
+        console.log(dataPayload) 
 
 
         filter.forEach((filter) => {
@@ -114,12 +117,14 @@ const AdbTable = ({ serviceType, hasDefaultValue = false, addNewData = false }: 
             filter={filter}
             setFilter={setFilter}
             sort={sort}
+            defaultSort={sortData}
             setSort={setSort}
             isLoading={isLoading}
             setIsLoading={setIsLoading}
             searchProps={searchParameter}
             handleFetchData={handleFetchData}
             totalData={totalData}
+            defaultFilter={defaultFilter}
             addNewData={
                 <>
                     <DatePicker

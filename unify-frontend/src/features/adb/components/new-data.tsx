@@ -341,7 +341,7 @@ const NewDataTable = ({ handleFetchData }: NewDataProps) => {
                                 render={({ field }) => (
                                     <>
                                         <Label className="text-xs text-muted-foreground">
-                                            Device Type
+                                            Command
                                         </Label>
 
                                         <Select

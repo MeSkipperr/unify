@@ -27,8 +27,6 @@ import PagenationTable from "./pagenation";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Label } from "@radix-ui/react-label";
 import TableRowSkeleton from "./skeleton";
-import { Device } from "@/features/device/types";
-import ActionsColumns from "@/features/device/components/columns/actions";
 
 const DataTable = <TData,>({
     data,
@@ -38,6 +36,7 @@ const DataTable = <TData,>({
     setFilter,
     sort,
     setSort,
+    defaultSort,
     isLoading,
     setIsLoading,
     searchProps,
@@ -139,7 +138,7 @@ const DataTable = <TData,>({
 
     const handleResetFilter = () => {
         setFilter(defaultFilter ?? [])
-        setSort([])
+        setSort(defaultSort ?? [])
         setSearch("")
     }
 
@@ -258,7 +257,7 @@ const DataTable = <TData,>({
                                                 <EmptyDescription>Try adjusting your search or filters.</EmptyDescription>
                                             </EmptyHeader>
                                             <EmptyContent>
-                                                <Button onClick={async () => fetchData()}>
+                                                <Button onClick={async () => handleFetchData()}>
                                                     Reload Data
                                                 </Button>
                                             </EmptyContent>

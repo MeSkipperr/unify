@@ -127,6 +127,7 @@ const DeviceTableData = (
             columns={finalColumns}
             setFilter={setFilter}
             sort={sortOptions}
+            defaultSort={sortData}
             setSort={setSortOptions}
             isLoading={isLoading}
             setIsLoading={setIsLoading}
