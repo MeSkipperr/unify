@@ -11,6 +11,8 @@ import (
 	"unify-backend/internal/job"
 	"unify-backend/internal/services"
 	"unify-backend/models"
+
+	"github.com/google/uuid"
 )
 
 func StartADBWorkerPool(manager *Manager, count int, jobs <-chan job.ADBJob) {
@@ -25,6 +27,7 @@ type UpdateDataResAdbProps struct {
 	StartedAt time.Time     `json:"startedAt"`
 	FinishAt  time.Time     `json:"finishAt"`
 	Result    string        `json:"result"`
+	ID        uuid.UUID     `json:"id"`
 }
 
 func updateDataResADB(j job.ADBJob, data UpdateDataResAdbProps) error {
@@ -76,6 +79,7 @@ func adbWorker(id int, jobs <-chan job.ADBJob, sseManager *sse.SSEManager) {
 				StartedAt: startedAt,
 				FinishAt:  finishAt,
 				Result:    output,
+				ID:        j.ID,
 			},
 		}
 

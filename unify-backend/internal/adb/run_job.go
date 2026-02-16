@@ -10,21 +10,42 @@ const DefaultConfigPath = "internal/adb/adb.linux.json"
 
 // RunJob runs an ADB job using the given config path. Returns status and output/error message.
 func RunJob(j job.ADBJob, configPath string) (AdbStatus, string) {
-	adbConfig, err := LoadADBConfig(configPath)
-	if err != nil {
-		return StatusFailed, err.Error()
-	}
-	data := map[string]string{
-		"adbPath": adbConfig.ADBPath,
-		"ip":      j.IPAddress,
-		"port":    fmt.Sprintf("%d", j.Port),
-		"package": adbConfig.Package["youtube"],
-	}
+    // Load ADB config
+    adbConfig, err := LoadADBConfig(configPath)
+    if err != nil {
+        return StatusFailed, err.Error()
+    }
 
-	status, output := AdbRun(AdbRunRequest{
-		Config:   adbConfig,
-		Template: j.Command,
-		Data:     data,
-	})
-	return status, output
+    // Cari command dari key di adbListCommand
+    var commandTemplate string
+    found := false
+    for _, cmd := range adbConfig.ADBCommandList {
+        if cmd.Key == j.Command {
+            commandTemplate = cmd.Command
+            found = true
+            break
+        }
+    }
+
+    if !found {
+        return StatusFailed, "command invalid"
+    }
+
+    // Data untuk replace template
+    data := map[string]string{
+        "adbPath": adbConfig.ADBPath,
+        "ip":      j.IPAddress,
+        "port":    fmt.Sprintf("%d", j.Port),
+        "package": adbConfig.Package["youtube"],
+    }
+
+    // Jalankan command
+    status, output := AdbRun(AdbRunRequest{
+        Config:   adbConfig,
+        Template: commandTemplate,
+        Data:     data,
+    })
+
+    return status, output
 }
+

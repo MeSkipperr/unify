@@ -15,5 +15,39 @@
         "getDeviceInfo"     : "{adbPath} -s {ip}:{port} shell getprop ro.product.model",
         "getDeviceSerial"   : "{adbPath} -s {ip}:{port} shell getprop ro.serialno",
         "getDeviceId"       : "{adbPath} -s {ip}:{port} shell settings get secure android_id"
-    }
+    },
+    "adbListCommand": [
+        {
+            "key": "reboot-device",
+            "command": "{adbPath} -s {ip}:{port} reboot"
+        },
+        {
+            "key": "remove-youtube-data",
+            "command": "{adbPath} -s {ip}:{port} shell pm clear com.google.android.youtube.tv"
+        },
+        {
+            "key": "enable-youtube",
+            "command": "{adbPath} -s {ip}:{port} shell pm enable com.google.android.youtube.tv"
+        },
+        {
+            "key": "-youtube",
+            "command": "{adbPath} -s {ip}:{port} shell pm disable-user --user 0 com.google.android.youtube.tv"
+        },
+        {
+            "key": "get-uptime",
+            "command": "{adbPath} -s {ip}:{port} shell cat /proc/uptime"
+        },
+        {
+            "key": "get-product-model",
+            "command": "{adbPath} -s {ip}:{port} shell getprop ro.product.model"
+        },
+        {
+            "key": "get-serial-number",
+            "command": "{adbPath} -s {ip}:{port} shell getprop ro.serialno"
+        },
+        {
+            "key": "    ",
+            "command": "{adbPath} -s {ip}:{port} shell settings get secure android_id"
+        }
+    ]
 }

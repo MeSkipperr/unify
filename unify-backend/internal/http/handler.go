@@ -57,8 +57,15 @@ func NewHandler(m *worker.Manager) *gin.Engine {
 			"http://localhost:3000",
 			"http://localhost:5500",
 		},
-		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE", "PATCH"},
-		AllowHeaders:     []string{"Origin", "Content-Type", "Authorization"},
+		AllowMethods: []string{
+			"GET", "POST", "PUT", "DELETE", "PATCH",
+		},
+		AllowHeaders: []string{
+			"Origin",
+			"Content-Type",
+			"Authorization",
+			"X-Timezone", 
+		},
 		AllowCredentials: true,
 	}))
 
@@ -73,7 +80,7 @@ func NewHandler(m *worker.Manager) *gin.Engine {
 
 	events := router.Group("/events")
 	{
-		events.GET("/adb", func(c *gin.Context) {
+		events.GET("/services", func(c *gin.Context) {
 			h.sse.Subscribe(c.Writer, c.Request, sse.SSEChannelServices)
 		})
 	}

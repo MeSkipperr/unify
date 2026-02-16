@@ -5,13 +5,19 @@ import (
 	"os"
 )
 
+type ADBCommand struct {
+	Key     string `json:"key"`
+	Command string `json:"command"`
+}
+
 type ADBConfig struct {
-	ADBPath            string            `json:"adbPath"`
-	ADBPort            int               `json:"adbPort"`
-	Package            map[string]string `json:"package"`
-	VerificationSteps  int               `json:"verificationSteps"`
-	StatusMessage      map[string]string `json:"statusMessage"`
-	CommandTemplate    map[string]string `json:"adbCommandTemplate"`
+	ADBPath           string            `json:"adbPath"`
+	ADBPort           int               `json:"adbPort"`
+	Package           map[string]string `json:"package"`
+	VerificationSteps int               `json:"verificationSteps"`
+	StatusMessage     map[string]string `json:"statusMessage"`
+	CommandTemplate   map[string]string `json:"adbCommandTemplate"`
+	ADBCommandList    []ADBCommand      `json:"adbListCommand"`
 }
 
 func LoadADBConfig(path string) (*ADBConfig, error) {

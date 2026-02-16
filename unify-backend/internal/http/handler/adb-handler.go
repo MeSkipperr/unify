@@ -35,6 +35,11 @@ func GetAdbResults(c *gin.Context) {
 		pageSize = 50
 	}
 
+	tz := c.GetHeader("X-Timezone")
+	if tz == "" {
+		tz = "UTC"
+	}
+
 	typeServices := c.QueryArray("typeServices[]")
 	sort := c.Query("sort")
 	search := c.Query("search")
@@ -48,6 +53,7 @@ func GetAdbResults(c *gin.Context) {
 		sort,
 		search,
 		date,
+		tz,
 	)
 
 	if err != nil {
@@ -75,6 +81,7 @@ func GetAdbResultsPaginated(
 	sort string,
 	search string,
 	date string,
+	tz string,
 ) (
 	data []AdbResultWithIndex,
 	total int64,
@@ -113,10 +120,20 @@ func GetAdbResultsPaginated(
 	}
 
 	if date != "" {
+		loc, _ := time.LoadLocation(tz)
+	
+		parsedDate, _ := time.ParseInLocation("2006-01-02", date, loc)
+	
+		startOfDay := parsedDate
+		endOfDay := parsedDate.Add(24 * time.Hour)
+	
 		query = query.Where(
-			"DATE(start_time) = ?", date,
+			"start_time >= ? AND start_time < ?",
+			startOfDay.UTC(),
+			endOfDay.UTC(),
 		)
 	}
+	
 	// =====================
 	// SORT
 	// =====================
