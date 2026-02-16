@@ -1,46 +1,53 @@
-// hooks/useMTR.ts
-import { useEffect, useRef, useState } from "react"
-import type { MTRData } from "./types"
-import { toast } from "sonner"
+import { useEffect, useRef, useState, useCallback } from "react";
+import type { MTRData } from "./types";
+import { toast } from "sonner";
 
 export const useMTR = (url: string) => {
-    const [data, setData] = useState<MTRData>()
-    const wsRef = useRef<WebSocket | null>(null)
+  const [data, setData] = useState<MTRData>();
+  const [enabled, setEnabled] = useState(false);
+  const eventSourceRef = useRef<EventSource | null>(null);
 
-    useEffect(() => {
-        if (wsRef.current) return
+  const start = useCallback(() => {
+    if (eventSourceRef.current) return;
 
-        const ws = new WebSocket(url)
-        wsRef.current = ws
+    const es = new EventSource(url);
+    eventSourceRef.current = es;
 
-        ws.onopen = () => {
-            toast.success("WebSocket connected", { position: "bottom-right" })
-        }
+    es.onmessage = (event) => {
+      try {
+        const parsed = JSON.parse(event.data);
+        setData(parsed);
+      } catch {
+        toast.error("SSE parse error", { position: "bottom-right" });
+      }
+    };
 
-        ws.onmessage = (event) => {
-            try {
-                setData(JSON.parse(event.data))
-            } catch (err) {
-                toast.error("Parse error", { position: "bottom-right" })
-            }
-        }
+    es.onerror = () => {
+      console.error("SSE error");
+    };
+  }, [url]);
 
-        ws.onerror = () => {
+  const stop = useCallback(() => {
+    if (eventSourceRef.current) {
+      eventSourceRef.current.close();
+      eventSourceRef.current = null;
+    }
+  }, []);
 
-            toast.error("WebSocket error", { position: "bottom-right" })
-        }
+  useEffect(() => {
+    if (enabled) {
+      start();
+    } else {
+      stop();
+    }
 
-        ws.onclose = (event) => {
-            toast.success("WebSocket closed", { position: "bottom-right" })
-            wsRef.current = null
-        }
+    return () => stop();
+  }, [enabled, start, stop]);
 
-        return () => {
-            if (ws.readyState === WebSocket.OPEN) {
-                ws.close()
-            }
-        }
-    }, [url])
-
-    return data
-}
+  return {
+    data,
+    start: () => setEnabled(true),
+    stop: () => setEnabled(false),
+    isRunning: enabled,
+  };
+};
