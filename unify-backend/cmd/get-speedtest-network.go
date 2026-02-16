@@ -6,6 +6,7 @@ import (
 	"time"
 	"unify-backend/internal/core/ip"
 	"unify-backend/internal/database"
+	"unify-backend/internal/http/sse"
 	"unify-backend/internal/services"
 	"unify-backend/internal/speedtest"
 	"unify-backend/internal/worker"
@@ -25,6 +26,20 @@ type networkConfig struct {
 	Name      string `json:"name"`
 	Interface string `json:"interface"`
 	IPAddress string `json:"ip_address"`
+}
+
+func sendSSESpeedtest(manager *worker.Manager, data models.SpeedtestResult) {
+	sseManager := manager.GetSSE()
+
+	res := sse.ServicesEvent{
+		Type: ServiceGetSpeedtestNetwork,
+		Data: data,
+	}
+
+	if sseManager != nil {
+		sseManager.Broadcast(sse.SSEChannelServices, res)
+	}
+
 }
 
 func GetSpeedtestNetwork(manager *worker.Manager) (*worker.Worker, error) {
@@ -89,12 +104,13 @@ func GetSpeedtestNetwork(manager *worker.Manager) (*worker.Worker, error) {
 						PingMs:       result.Ping.Latency,
 						ResultURL:    result.Result.URL,
 					}
-					// Save resultRecord to database
 
+					// Save resultRecord to database
 					if err := database.DB.Create(&resultRecord).Error; err != nil {
 						services.LogError(ServiceGetSpeedtestNetwork, "Failed to save speedtest result for IP "+network.IPAddress+" and server ID "+serverID+": "+err.Error())
 						continue
 					}
+					sendSSESpeedtest(manager, resultRecord)
 				}
 			}
 			services.LogInfo(ServiceGetSpeedtestNetwork, "Completed Get Speedtest Network Service")
