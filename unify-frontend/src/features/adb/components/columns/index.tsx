@@ -7,7 +7,7 @@ import { formatDateTime } from '@/utils/time'
 
 
 import { Label } from '@radix-ui/react-label'
-import { EllipsisVertical } from 'lucide-react'
+import {  MessageSquareText } from 'lucide-react'
 
 import {
     Dialog,
@@ -90,7 +90,7 @@ export const columns: ColumnDef<AdbResult>[] =
                     <Dialog>
                         <DialogTrigger asChild>
                             <Button variant="ghost">
-                                <EllipsisVertical />
+                                <MessageSquareText />
                             </Button>
                         </DialogTrigger>
                         <DialogContent >

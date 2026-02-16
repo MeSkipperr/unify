@@ -11,6 +11,7 @@ import { DatePicker } from "@/components/date-picker";
 import { updateFilterOption } from "@/features/device/utils/select-options";
 import { useSearchParams } from "next/navigation";
 import { AdbQuery, getAdbResults } from "../api/adb-result.api";
+import NewDataTable from "./new-data";
 
 const searchParameter = {
     id: "adb-search-bar",
@@ -21,9 +22,10 @@ const searchParameter = {
 type AdbTableProps = {
     serviceType: string
     hasDefaultValue?: boolean
+    addNewData?: boolean
 }
 
-const AdbTable = ({ serviceType, hasDefaultValue = false }: AdbTableProps) => {
+const AdbTable = ({ serviceType, hasDefaultValue = false, addNewData = false }: AdbTableProps) => {
     const searchParams = useSearchParams()
 
     const defaultFilter = updateFilterOption(dataFilter, "serviceType", serviceType)
@@ -79,7 +81,7 @@ const AdbTable = ({ serviceType, hasDefaultValue = false }: AdbTableProps) => {
                 id: item.ID,
                 index: item.index,
                 status: item.Status,
-                ipAddress: item.IPAddress,  
+                ipAddress: item.IPAddress,
                 finishTime: item.FinishTime,
                 startTime: item.StartTime,
                 port: item.Port,
@@ -119,11 +121,17 @@ const AdbTable = ({ serviceType, hasDefaultValue = false }: AdbTableProps) => {
             handleFetchData={handleFetchData}
             totalData={totalData}
             addNewData={
-                <DatePicker
-                    value={date}
-                    onChange={setDate}
-                    maxDate={new Date()}
-                />
+                <>
+                    <DatePicker
+                        value={date}
+                        onChange={setDate}
+                        maxDate={new Date()}
+                    />
+                    {addNewData &&
+                        <NewDataTable handleFetchData={handleFetchData} />
+                    }
+                </>
+
             }
         />
     );
