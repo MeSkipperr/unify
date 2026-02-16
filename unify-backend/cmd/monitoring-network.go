@@ -87,11 +87,29 @@ func checkDeviceConnectivity(dev models.Devices) ConnectivityResult {
 }
 
 func sendNotification(dev models.Devices, isConnect bool) {
-	subject := fmt.Sprintf("[ALERT] %s - DOWN", dev.Name)
+	var level models.NotificationLevel
+	var subject string
+	var detail string
+
 	if isConnect {
-		subject = fmt.Sprintf("[ALERT] %s - UP", dev.Name)
+		level = models.NoticationStatusInfo
+		subject = fmt.Sprintf("[INFO] %s - UP", dev.Name)
+		detail = fmt.Sprintf("Device %s is reachable and operating normally.", dev.Name)
+	} else {
+		level = models.NoticationStatusAlert
+		subject = fmt.Sprintf("[ALERT] %s - DOWN", dev.Name)
+		detail = fmt.Sprintf("Device %s is not reachable. Immediate attention may be required.", dev.Name)
 	}
 
+	notificationPayload := models.Notification{
+		Level:  level,
+		Title:  subject,
+		Detail: detail,
+		URL:    fmt.Sprintf("/devices?search=%s", dev.Name),
+	}
+
+	notification.SSENotification(notificationPayload)
+	
 	notification.UserNotificationChannel(mailer.EmailData{
 		Subject:        subject,
 		BodyTemplate:   email.DeviceStatusEmail(dev, isConnect),
