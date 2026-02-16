@@ -1,6 +1,8 @@
 package handler
 
 import (
+	"math"
+	"strconv"
 	"time"
 	"unify-backend/internal/database"
 	"unify-backend/models"
@@ -41,10 +43,51 @@ func GetMTRResult() gin.HandlerFunc {
 			return
 		}
 
-		var results []models.MTRResult
+		// --- Query param ---
+		page, err := strconv.Atoi(c.DefaultQuery("page", "1"))
+		if err != nil || page < 1 {
+			page = 1
+		}
 
-		err := database.DB.
-			Table("(SELECT * FROM mtr_results WHERE session_id = ? ORDER BY created_at DESC LIMIT 256) as t", id).
+		pageSize, err := strconv.Atoi(c.DefaultQuery("pageSize", "100"))
+		if err != nil || pageSize <= 0 {
+			pageSize = 100
+		}
+
+		if pageSize > 500 {
+			pageSize = 500
+		}
+
+		offset := (page - 1) * pageSize
+
+		var results []models.MTRResult
+		var total int64
+
+		// --- Hitung total ---
+		err = database.DB.
+			Model(&models.MTRResult{}).
+			Where("session_id = ?", id).
+			Count(&total).Error
+
+		if err != nil {
+			c.JSON(500, gin.H{
+				"message": "failed to count mtr results",
+				"error":   err.Error(),
+			})
+			return
+		}
+
+		// --- Subquery: Pagination dalam kondisi DESC ---
+		subQuery := database.DB.
+			Model(&models.MTRResult{}).
+			Where("session_id = ?", id).
+			Order("created_at DESC").
+			Limit(pageSize).
+			Offset(offset)
+
+		// --- Outer query: urutkan ulang ASC ---
+		err = database.DB.
+			Table("(?) as t", subQuery).
 			Order("created_at ASC").
 			Find(&results).Error
 
@@ -56,9 +99,14 @@ func GetMTRResult() gin.HandlerFunc {
 			return
 		}
 
+		totalPages := int(math.Ceil(float64(total) / float64(pageSize)))
+
 		c.JSON(200, gin.H{
-			"data":  results,
-			"total": len(results),
+			"data":       results,
+			"total":      total,
+			"page":       page,
+			"pageSize":   pageSize,
+			"totalPages": totalPages,
 		})
 	}
 }
