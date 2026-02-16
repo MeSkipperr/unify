@@ -50,6 +50,10 @@ func handleSessionState(db *gorm.DB, s *models.SessionPortForward) {
 	}
 }
 
+func sendRuleApplyed () {
+	
+}
+
 func handlePending(db *gorm.DB, s *models.SessionPortForward) {
 	if err := iptables.ApplyRule(s); err != nil {
 		s.Status = models.SessionStatusError
