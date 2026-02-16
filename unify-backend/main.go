@@ -10,7 +10,6 @@ import (
 	"unify-backend/internal/http/sse"
 	"unify-backend/internal/queue"
 	"unify-backend/internal/worker"
-	"unify-backend/internal/ws"
 
 	"github.com/joho/godotenv"
 	_ "github.com/lib/pq"
@@ -45,13 +44,6 @@ func main() {
 	}
 
 	apiHandler := api.NewHandler(manager)
-
-	mtrSocket := ws.NewHub()
-	manager.SetMTRhub(mtrSocket)
-
-
-	apiHandler.GET("/ws/mtr", ws.ServeWS(mtrSocket))
-
 
 	server := &http.Server{
 		Addr:    config.ServerPort, 

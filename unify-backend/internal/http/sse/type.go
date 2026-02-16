@@ -3,6 +3,8 @@ package sse
 import (
 	"time"
 	"unify-backend/internal/core/mtr"
+
+	"github.com/google/uuid"
 )
 
 const (
@@ -20,7 +22,11 @@ type NotificationEvent struct {
 	CreatedAT time.Time `json:"createdAt"`
 }
 
-type MtrEvent mtr.MtrResultJson
+type MtrEvent struct {
+	Time    time.Time         `json:"time"`
+	ID      uuid.UUID         `json:"id"`
+	Message mtr.MtrResultJson `json:"message"`
+}
 
 type ServicesEvent struct {
 	Type string      `json:"type"`

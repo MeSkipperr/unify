@@ -7,12 +7,12 @@ import (
 	"time"
 	"unify-backend/internal/core/mtr"
 	"unify-backend/internal/database"
+	"unify-backend/internal/http/sse"
 	"unify-backend/internal/mailer"
 	"unify-backend/internal/notification"
 	"unify-backend/internal/services"
 	"unify-backend/internal/template/email"
 	"unify-backend/internal/worker"
-	"unify-backend/internal/ws"
 	"unify-backend/models"
 
 	"gorm.io/gorm"
@@ -204,13 +204,15 @@ func checkReachableStatus(data mtrSessionParms) {
 }
 
 func sendPacketUseWebsocket(data mtrSessionParms) {
-	msg := ws.Message{
-		Time:    time.Now().UTC(),
-		ID:      data.session.ID.String(),
+	sseManager := worker.ManagerGlobal.GetSSE()
+
+	res := sse.MtrEvent{
+		Time: time.Now().UTC(),
+		ID: data.session.ID,
 		Message: data.out,
 	}
 
-	data.manager.BroadcastProject(msg)
+	sseManager.Broadcast(sse.SSEChannelMTR, res)
 }
 
 func startSyncSessionMTRWorker(db *gorm.DB, config MTRSessionConfig, manager *worker.Manager) {
