@@ -50,16 +50,16 @@ const ServicesTable = () => {
             try {
                 setIsLoading(true)
                 const res = await getServices({ page: 1, pageSize: 50 })
-                const services: Services<any>[] = res.data.map((item: any) => ({
-                    id: item.ID,
-                    serviceName: item.ServiceName,
-                    displayName: item.DisplayName,
-                    description: item.Description,
-                    version: item.Version,
-                    type: item.Type,
-                    config: item.Config,
-                    updatedAt: new Date(item.UpdatedAt),
-                    status: item.Status
+                const services: Services<any>[] = res.data.map((item: Services<any>) => ({
+                    id: item.id,
+                    serviceName: item.serviceName,
+                    displayName: item.displayName,
+                    description: item.description,
+                    version: item.version,
+                    type: item.type,
+                    config: item.config,
+                    updatedAt: new Date(item.updatedAt),
+                    status: item.status
                 }))
                 setDatas(services)
             } catch (error) {

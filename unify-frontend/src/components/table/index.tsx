@@ -18,7 +18,7 @@ import {
     DropdownMenuTrigger,
 } from "../ui/dropdown-menu"
 import { Button } from "../ui/button"
-import { ChevronDown, Plus, RotateCw, TriangleAlert } from "lucide-react"
+import { ChevronDown, RotateCw, TriangleAlert } from "lucide-react"
 import FilterGroup from "../filter/filter-group";
 import { SearchBar } from "./search";
 import SortGroup from "../sort";

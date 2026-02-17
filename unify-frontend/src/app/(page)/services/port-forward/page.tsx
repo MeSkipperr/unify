@@ -1,9 +1,12 @@
 import PortForwardTable from "@/features/port-forward/components/table"
+import { Suspense } from "react"
 
 const PortForwardPage = () => {
     return (
         <div >
-            <PortForwardTable/>
+            <Suspense fallback={<div>Loading...</div>}>
+                <PortForwardTable />
+            </Suspense>
         </div>
     )
 }

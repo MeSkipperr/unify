@@ -19,7 +19,6 @@ import {
 } from "@/components/ui/chart"
 
 import { formatDateTime } from "@/utils/time"
-import { StackId } from "recharts/types/util/ChartUtils"
 import { getSpeedTestResult } from "./speedtest.api"
 
 
@@ -42,10 +41,10 @@ const chartConfig = {
 } satisfies ChartConfig
 
 type DataSpeedTestResultProps = {
-    date: Date
-    ping: number
-    upload: number
-    download: number
+    testedAt: Date
+    pingMs: number
+    uploadMbps: number
+    downloadMbps: number
 }
 export type SpeedTestInformation = {
     name: string
@@ -70,14 +69,13 @@ const SpeedNetworkChart = ({ information }: SpeedNetworkChartProps) => {
 
             try {
                 const result = await getSpeedTestResult(query)
-                const mappedData: DataSpeedTestResultProps[] = result.map((item: any) => ({
-                    date: item.testedAt,
+                const mappedData: DataSpeedTestResultProps[] = result.map((item : DataSpeedTestResultProps) => ({
+                    testedAt: item.testedAt,
                     ping: item.pingMs,
                     upload: item.uploadMbps,
                     download: item.downloadMbps,
                 }))
-                setServerName(result[0].serverName)
-                console.log(mappedData)
+                setServerName(result[0].erverName)
                 setData(mappedData)
 
             } catch (error) {
@@ -163,7 +161,7 @@ const SpeedNetworkChart = ({ information }: SpeedNetworkChartProps) => {
                         </defs>
                         <CartesianGrid vertical={false} />
                         <XAxis
-                            dataKey="date"
+                            dataKey="testedAt"
                             tickLine={false}
                             axisLine={false}
                             interval={0}
@@ -185,7 +183,7 @@ const SpeedNetworkChart = ({ information }: SpeedNetworkChartProps) => {
                                         const date = new Date(value)
                                         return formatDateTime(date)
                                     }}
-                                    formatter={(value, name, item: any) => {
+                                    formatter={(value, name, item) => {
                                         let unit = ""
 
                                         if (name === "download" || name === "upload") {

@@ -48,25 +48,26 @@ export default async function Page() {
     }
 
     const res = await response.json()
+    console.log(res.config)
 
     const service: Services<ConfigProps> = {
-        id: res.ID,
-        serviceName: res.ServiceName,
-        displayName: res.DisplayName,
-        description: res.Description,
-        version: res.Version,
-        type: res.Type,
+        id: res.id,
+        serviceName: res.serviceName,
+        displayName: res.displayName,
+        description: res.description,
+        version: res.version,
+        type: res.type,
         config: {
-            cron: res.Config.cron,
-            network: res.Config.network.map((net: any) => ({
+            cron: res.config.cron,
+            network: res.config.network.map((net: NetworkDetailProps) => ({
                 name: net.name,
                 interface: net.interface,
-                ipAddress: net.ip_address,
+                ipAddress: net.ipAddress,
             })),
-            serverId: res.Config.server_id,
+            serverId: res.config.server_id,
         },
-        updatedAt: new Date(res.UpdatedAt),
-        status: res.Status
+        updatedAt: new Date(res.updatedAt),
+        status: res.status
     }
 
     return (

@@ -10,6 +10,7 @@ import { Label } from "@/components/ui/label"
 import { loginAction } from "./actions";
 import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import axios from "axios";
 
 
 const LoginForm = () => {
@@ -40,22 +41,27 @@ const LoginForm = () => {
             await loginAction({ username, password });
             // success handling / redirect
             router.push("/")
-        } catch (error: any) {
-            if (error.status === 401) {
-                setErrorMsg("Invalid username or password.");
+        } catch (error) {
+            if (axios.isAxiosError(error)) {
+                if (error.status === 401) {
+                    setErrorMsg("Invalid username or password.");
+                } else {
+                    setErrorMsg("Something went wrong. Please try again.");
+                }
+
+                // clear previous timer
+                if (errorTimerRef.current) {
+                    clearTimeout(errorTimerRef.current);
+                }
+
+                // auto clear after 3 seconds
+                errorTimerRef.current = setTimeout(() => {
+                    setErrorMsg("");
+                }, 3000);
             } else {
-                setErrorMsg("Something went wrong. Please try again.");
+                setErrorMsg("Unexpected error occurred.")
             }
 
-            // clear previous timer
-            if (errorTimerRef.current) {
-                clearTimeout(errorTimerRef.current);
-            }
-
-            // auto clear after 3 seconds
-            errorTimerRef.current = setTimeout(() => {
-                setErrorMsg("");
-            }, 3000);
         } finally {
             setIsLoading(false);
         }

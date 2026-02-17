@@ -1,4 +1,5 @@
-"use client"
+"use client";
+
 import {
     Sheet,
     SheetClose,
@@ -8,7 +9,7 @@ import {
     SheetHeader,
     SheetTitle,
     SheetTrigger,
-} from "@/components/ui/sheet"
+} from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
@@ -20,7 +21,7 @@ import {
     SelectItem,
     SelectTrigger,
     SelectValue,
-} from "@/components/ui/select"
+} from "@/components/ui/select";
 import {
     Dialog,
     DialogClose,
@@ -29,9 +30,8 @@ import {
     DialogFooter,
     DialogHeader,
     DialogTitle,
-    DialogTrigger,
-} from "@/components/ui/dialog"
-import { useEffect, useRef, useState } from "react";
+} from "@/components/ui/dialog";
+import { useEffect, useRef, useState, useCallback } from "react";
 import { handleIPv4Input } from "@/utils/ipv4";
 import { Controller, useForm } from "react-hook-form";
 import { toast } from "sonner";
@@ -40,6 +40,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { AdbSchemas, UserFormValues } from "../schemas/adb.schema";
 import { AdbCommand } from "../types";
 import { createRunningAdb } from "../api/adb-result.api";
+import { useSSE } from "@/hooks/useSSE";
 
 import {
     CodeBlock,
@@ -47,75 +48,74 @@ import {
     CodeBlockContent,
     CodeBlockItem,
 } from "@/components/kibo-ui/code-block";
-import type { BundledLanguage } from "shiki"
+import type { BundledLanguage } from "shiki";
 
 type NewDataProps = {
-    handleFetchData: () => Promise<void>
-}
+    handleFetchData: () => Promise<void>;
+};
 
+type RunningAdbSseEvent = {
+    type: "running-adb";
+    data: {
+        id: string;
+        result: string;
+    };
+};
 
 const NewDataTable = ({ handleFetchData }: NewDataProps) => {
-    const [isOpen, setIsOpen] = useState<boolean>(false);
+    const [isOpen, setIsOpen] = useState(false);
     const [isUnsavedDialogOpen, setIsUnsavedDialogOpen] = useState(false);
-    const [isLoading, setIsLoading] = useState<boolean>(false);
-    const [showResult, setShowResult] = useState<boolean>(false)
+    const [isLoading, setIsLoading] = useState(false);
+    const [showResult, setShowResult] = useState(false);
+    const [jobId, setJobId] = useState<string | null>(null);
+
     const [codes, setCodes] = useState([
-        {
-            language: "bash",
-            filename: "",
-            code: "",
-        },
+        { language: "bash", filename: "", code: "" },
     ]);
+
     const isOpenRef = useRef(isOpen);
-    const eventSourceRef = useRef<EventSource | null>(null);
+
     useEffect(() => {
         isOpenRef.current = isOpen;
     }, [isOpen]);
 
-
     const handleChangeCode = (index: number, value: string) => {
         setCodes((prev) =>
-            prev.map((item, i) =>
-                i === index ? { ...item, code: value } : item
-            )
+            prev.map((item, i) => (i === index ? { ...item, code: value } : item))
         );
     };
-
 
     const {
         register,
         handleSubmit,
-        setValue,
         reset,
         control,
         watch,
-        formState: { errors, isSubmitting },
+        formState: { errors },
     } = useForm<UserFormValues>({
         resolver: zodResolver(AdbSchemas),
         defaultValues: {
             name: "",
             ipAddress: "",
-            command: "",
-            port: 5555
+            port: 5555,
+            command: AdbCommand.Reboot,
         },
     });
 
     const watchedValues = watch();
 
-    const hasAnyValue = (): boolean => {
-        return Object.values(watchedValues).some(
+    const hasAnyValue = () =>
+        Object.values(watchedValues).some(
             (value) => typeof value === "string" && value.trim() !== ""
         );
-    };
 
-
-    const handlerClose = () => {
+    const handleClose = () => {
         if (hasAnyValue()) {
             setIsUnsavedDialogOpen(true);
             return;
         }
-        setIsOpen(false)
-    }
+        setIsOpen(false);
+    };
 
     const handleDiscardChange = () => {
         reset();
@@ -123,61 +123,53 @@ const NewDataTable = ({ handleFetchData }: NewDataProps) => {
         setIsOpen(false);
     };
 
+    const handleCloseResult = async () => {
+        reset();
+        setShowResult(false);
+        setIsUnsavedDialogOpen(false);
+        setIsOpen(false);
+        setJobId(null);
+        await handleFetchData();
+    };
+
+    const handleSseMessage = useCallback(
+        (result: RunningAdbSseEvent) => {
+            if (result.type !== "running-adb") return;
+            if (!isOpenRef.current) return;
+            if (!jobId) return;
+
+            if (result.data.id === jobId) {
+                handleChangeCode(0, result.data.result);
+                setShowResult(true);
+                setIsLoading(false);
+                stop();
+            }
+        },
+        [jobId]
+    );
+
+    const { start, stop } = useSSE<RunningAdbSseEvent>({
+        url: "/events/services",
+        onMessage: handleSseMessage,
+    });
 
     const onSubmit = async (data: UserFormValues) => {
-        setIsLoading(true);
-
-        // close SSE lama jika ada
-        if (eventSourceRef.current) {
-            eventSourceRef.current.close();
-        }
-
         try {
+            setIsLoading(true);
+            stop();
+
             const res = await createRunningAdb(data);
-            const jobId = res.data.id;
+            const newJobId = res.data.id;
 
-            const eventSource = new EventSource(
-                `http://localhost:8080/events/services`
-            );
-
-            eventSourceRef.current = eventSource;
-
-            eventSource.onmessage = (event) => {
-                const result = JSON.parse(event.data);
-                if (result.type !== "running-adb" || !isOpenRef.current) return;
-
-                if (result.data.id === jobId) {
-                    handleChangeCode(0, result.data.result);
-                    setShowResult(true);
-                    setIsLoading(false);
-                    eventSource.close();
-                    eventSourceRef.current = null; 
-                }
-            };
-
-            eventSource.onerror = () => {
-                eventSource.close();
-                eventSourceRef.current = null;
-                toast.error("SSE connection failed", { position: "bottom-right" });
-                setIsLoading(false);
-            };
-        } catch (err) {
-            toast.error("Failed to running adb. Please try again.", { position: "bottom-right" });
+            setJobId(newJobId);
+            start();
+        } catch  {
+            toast.error("Failed to run adb. Please try again.", {
+                position: "bottom-right",
+            });
             setIsLoading(false);
         }
     };
-
-
-
-    const handleCloseResult = async () => {
-        reset()
-
-        setShowResult(false)
-        setIsUnsavedDialogOpen(false)
-        setIsOpen(false)
-        await handleFetchData()
-    }
-
 
     return (
         <Sheet open={isOpen}>
@@ -185,9 +177,9 @@ const NewDataTable = ({ handleFetchData }: NewDataProps) => {
                 <DialogContent showCloseButton={false}>
                     <DialogHeader>
                         <DialogTitle>Result</DialogTitle>
-                        <DialogDescription>
-                        </DialogDescription>
+                        <DialogDescription />
                     </DialogHeader>
+
                     <CodeBlock data={codes} defaultValue={codes[0].language}>
                         <CodeBlockBody>
                             {(item) => (
@@ -196,19 +188,19 @@ const NewDataTable = ({ handleFetchData }: NewDataProps) => {
                                     lineNumbers={false}
                                     value={item.language}
                                 >
-                                    <CodeBlockContent language={item.language as BundledLanguage}>
+                                    <CodeBlockContent
+                                        language={item.language as BundledLanguage}
+                                    >
                                         {item.code}
                                     </CodeBlockContent>
                                 </CodeBlockItem>
                             )}
                         </CodeBlockBody>
                     </CodeBlock>
+
                     <DialogFooter>
                         <DialogClose asChild>
-                            <Button variant="default"
-                                onClick={() => handleCloseResult()}>
-                                Close
-                            </Button>
+                            <Button onClick={handleCloseResult}>Close</Button>
                         </DialogClose>
                     </DialogFooter>
                 </DialogContent>
@@ -219,23 +211,19 @@ const NewDataTable = ({ handleFetchData }: NewDataProps) => {
                     <DialogHeader>
                         <DialogTitle>Unsaved Changes</DialogTitle>
                         <DialogDescription>
-                            You have unsaved changes. If you leave now, your changes will be lost.
-                            Do you want to continue editing or discard your changes?
+                            You have unsaved changes. If you leave now, your changes will be
+                            lost.
                         </DialogDescription>
                     </DialogHeader>
 
                     <DialogFooter className="gap-2">
                         <DialogClose asChild>
-                            <Button variant="default"
-                                onClick={() => setIsUnsavedDialogOpen(false)}>
+                            <Button onClick={() => setIsUnsavedDialogOpen(false)}>
                                 Continue Editing
                             </Button>
                         </DialogClose>
-
                         <DialogClose asChild>
-                            <Button variant="destructive"
-                                onClick={() => handleDiscardChange()}
-                            >
+                            <Button variant="destructive" onClick={handleDiscardChange}>
                                 Discard Changes
                             </Button>
                         </DialogClose>
@@ -244,25 +232,25 @@ const NewDataTable = ({ handleFetchData }: NewDataProps) => {
             </Dialog>
 
             <SheetTrigger asChild>
-                <Button onClick={() => setIsOpen(true)} >
+                <Button onClick={() => setIsOpen(true)}>
                     <Plus />
                     Add New
                 </Button>
             </SheetTrigger>
-            <form onSubmit={handleSubmit(onSubmit)} >
 
-                <SheetContent className="sm:max-w-md"
+            <form onSubmit={handleSubmit(onSubmit)}>
+                <SheetContent
+                    className="sm:max-w-md"
                     showCloseButton={false}
-                    onInteractOutside={() => handlerClose()}>
+                    onInteractOutside={handleClose}
+                >
                     <SheetHeader>
-                        <SheetTitle>
-                            Running Adb
-                        </SheetTitle>
+                        <SheetTitle>Running Adb</SheetTitle>
                         <SheetDescription>
                             Execute the selected ADB command on the target device.
-                            Please ensure the device is connected before proceeding.
                         </SheetDescription>
                     </SheetHeader>
+
                     <div className="mt-2 space-y-6 px-4">
                         <div className="space-y-1">
                             <Label className="text-xs text-muted-foreground">
@@ -271,7 +259,6 @@ const NewDataTable = ({ handleFetchData }: NewDataProps) => {
                             <Input
                                 placeholder="DPSCY-..."
                                 className="h-9 text-sm"
-                                required
                                 {...register("name")}
                             />
                             {errors.name && (
@@ -280,6 +267,7 @@ const NewDataTable = ({ handleFetchData }: NewDataProps) => {
                                 </p>
                             )}
                         </div>
+
                         <div className="grid grid-cols-2 gap-4">
                             <div className="space-y-1">
                                 <Label className="text-xs text-muted-foreground">
@@ -290,7 +278,6 @@ const NewDataTable = ({ handleFetchData }: NewDataProps) => {
                                     control={control}
                                     render={({ field }) => (
                                         <Input
-                                            required
                                             {...field}
                                             placeholder="xxx.xxx.xxx.xxx"
                                             className="h-9 text-sm font-mono"
@@ -308,9 +295,7 @@ const NewDataTable = ({ handleFetchData }: NewDataProps) => {
                             </div>
 
                             <div className="space-y-1">
-                                <Label className="text-xs text-muted-foreground">
-                                    Port
-                                </Label>
+                                <Label className="text-xs text-muted-foreground">Port</Label>
                                 <Controller
                                     name="port"
                                     control={control}
@@ -318,12 +303,7 @@ const NewDataTable = ({ handleFetchData }: NewDataProps) => {
                                         <Input
                                             {...field}
                                             type="number"
-                                            placeholder="xxxx"
                                             className="h-9 text-sm"
-                                            onChange={(e) => {
-                                                const value = e.target.value;
-                                                field.onChange(value === "" ? "" : Number(value));
-                                            }}
                                         />
                                     )}
                                 />
@@ -334,6 +314,7 @@ const NewDataTable = ({ handleFetchData }: NewDataProps) => {
                                 )}
                             </div>
                         </div>
+
                         <div className="space-y-1">
                             <Controller
                                 control={control}
@@ -343,20 +324,18 @@ const NewDataTable = ({ handleFetchData }: NewDataProps) => {
                                         <Label className="text-xs text-muted-foreground">
                                             Command
                                         </Label>
-
                                         <Select
                                             onValueChange={field.onChange}
                                             value={field.value}
                                         >
                                             <SelectTrigger className="text-sm w-full">
-                                                <SelectValue placeholder="Select device type" />
+                                                <SelectValue placeholder="Select command" />
                                             </SelectTrigger>
-
                                             <SelectContent>
                                                 <SelectGroup>
-                                                    {Object.values(AdbCommand).map((type) => (
-                                                        <SelectItem key={type} value={type}>
-                                                            {type.replace("-", " ").toUpperCase()}
+                                                    {Object.values(AdbCommand).map((cmd) => (
+                                                        <SelectItem key={cmd} value={cmd}>
+                                                            {cmd.replace("-", " ").toUpperCase()}
                                                         </SelectItem>
                                                     ))}
                                                 </SelectGroup>
@@ -371,14 +350,10 @@ const NewDataTable = ({ handleFetchData }: NewDataProps) => {
                                 </p>
                             )}
                         </div>
-
                     </div>
+
                     <SheetFooter>
-                        <Button
-                            type="button"
-                            onClick={handleSubmit(onSubmit)}
-                            disabled={isLoading}
-                        >
+                        <Button type="submit" disabled={isLoading}>
                             {isLoading ? (
                                 <span className="flex gap-2 items-center">
                                     <Spinner />
@@ -391,7 +366,7 @@ const NewDataTable = ({ handleFetchData }: NewDataProps) => {
 
                         <SheetClose asChild>
                             <Button
-                                onClick={handlerClose}
+                                onClick={handleClose}
                                 variant="outline"
                                 disabled={isLoading}
                             >
@@ -403,6 +378,6 @@ const NewDataTable = ({ handleFetchData }: NewDataProps) => {
             </form>
         </Sheet>
     );
-}
+};
 
 export default NewDataTable;

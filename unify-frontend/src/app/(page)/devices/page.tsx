@@ -1,9 +1,12 @@
 import DeviceTableData from "@/features/device/components";
+import { Suspense } from "react";
 
 const DevicesList = () => {
     return (
         <div className="h-[90dvh]">
-            <DeviceTableData/>
+            <Suspense fallback={<div>Loading...</div>}>
+                <DeviceTableData />
+            </Suspense>
         </div>
     );
 }

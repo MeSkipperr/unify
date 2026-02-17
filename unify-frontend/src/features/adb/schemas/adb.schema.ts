@@ -8,18 +8,15 @@ export const AdbSchemas = z.object({
 
   ipAddress: z.string().refine(isValidIPv4, "Invalid IPv4 address"),
 
-  port: z.coerce
+  port: z
     .number()
     .int("Port must be a whole number")
     .min(1, "Port must be between 1 and 65535")
     .max(65535, "Port must be between 1 and 65535"),
 
-  command: z
-    .string()
-    .min(1, "Command is required")
-    .refine((val) => Object.values(AdbCommand).includes(val as AdbCommand), {
-      message: "Invalid command",
-    }),
+  command: z.nativeEnum(AdbCommand, {
+    message: "Command is required",
+  }),
 });
 
 export type UserFormValues = z.infer<typeof AdbSchemas>;

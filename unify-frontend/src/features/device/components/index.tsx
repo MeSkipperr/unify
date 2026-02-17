@@ -11,7 +11,6 @@ import { TableQuery } from "@/components/table/types";
 import { updateFilterOption } from "../utils/select-options";
 import NewDataTable from "./new-data";
 import { ColumnDef } from "@tanstack/react-table";
-import ActionsColums from "./columns/actions";
 import { useSearchParams } from "next/navigation";
 import ActionsColumns from "./columns/actions";
 
