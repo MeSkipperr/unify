@@ -32,7 +32,7 @@ import {
     DialogTitle,
 } from "@/components/ui/dialog";
 import { useEffect, useRef, useState, useCallback } from "react";
-import { handleIPv4Input } from "@/utils/ipv4";
+import { handleIPv4Input, isValidIPv4 } from "@/utils/ipv4";
 import { Controller, useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { Spinner } from "@/components/ui/spinner";
@@ -49,6 +49,7 @@ import {
     CodeBlockItem,
 } from "@/components/kibo-ui/code-block";
 import type { BundledLanguage } from "shiki";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 
 type NewDataProps = {
     handleFetchData: () => Promise<void>;
@@ -63,6 +64,10 @@ type RunningAdbSseEvent = {
 };
 
 const NewDataTable = ({ handleFetchData }: NewDataProps) => {
+    const searchParams = useSearchParams();
+    const router = useRouter();
+    const pathname = usePathname();
+
     const [isOpen, setIsOpen] = useState(false);
     const [isUnsavedDialogOpen, setIsUnsavedDialogOpen] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
@@ -91,6 +96,7 @@ const NewDataTable = ({ handleFetchData }: NewDataProps) => {
         reset,
         control,
         watch,
+        setValue,
         formState: { errors },
     } = useForm<UserFormValues>({
         resolver: zodResolver(AdbSchemas),
@@ -101,6 +107,7 @@ const NewDataTable = ({ handleFetchData }: NewDataProps) => {
             command: AdbCommand.Reboot,
         },
     });
+
 
     const watchedValues = watch();
 
@@ -154,22 +161,53 @@ const NewDataTable = ({ handleFetchData }: NewDataProps) => {
     });
 
     const onSubmit = async (data: UserFormValues) => {
+        console.log("running")
         try {
             setIsLoading(true);
-            stop();
+            start();
 
             const res = await createRunningAdb(data);
             const newJobId = res.data.id;
 
             setJobId(newJobId);
-            start();
-        } catch  {
+        } catch {
             toast.error("Failed to run adb. Please try again.", {
                 position: "bottom-right",
             });
             setIsLoading(false);
         }
     };
+
+    useEffect(() => {
+        const listenIpParam = searchParams.get("ip-address");
+        const deviceName = searchParams.get("name");
+
+        const params = new URLSearchParams(searchParams.toString());
+
+        // Jika salah satu kosong → hapus keduanya
+        if (!listenIpParam || !deviceName) {
+            params.delete("ip-address");
+            params.delete("name");
+
+            router.replace(`${pathname}?${params.toString()}`);
+            return;
+        }
+
+        // Jika IP valid → isi form
+        if (isValidIPv4(listenIpParam)) {
+            setValue("ipAddress", listenIpParam);
+            setValue("name", deviceName);
+            setIsOpen(true);
+        } else {
+            // Jika IP tidak valid → hapus dari URL
+            params.delete("ip-address");
+            params.delete("name");
+
+            router.replace(`${pathname}?${params.toString()}`);
+        }
+
+    }, [searchParams, pathname, router, setValue]);
+
 
     return (
         <Sheet open={isOpen}>
@@ -238,7 +276,12 @@ const NewDataTable = ({ handleFetchData }: NewDataProps) => {
                 </Button>
             </SheetTrigger>
 
-            <form onSubmit={handleSubmit(onSubmit)}>
+            <form
+                onSubmit={(e) => {
+                    console.log("FORM TRIGGERED");
+                    handleSubmit(onSubmit)(e);
+                }}
+            >
                 <SheetContent
                     className="sm:max-w-md"
                     showCloseButton={false}
@@ -353,7 +396,12 @@ const NewDataTable = ({ handleFetchData }: NewDataProps) => {
                     </div>
 
                     <SheetFooter>
-                        <Button type="submit" disabled={isLoading}>
+                        <Button
+                            type="submit"
+                            onClick={
+                                handleSubmit(onSubmit)
+                            }
+                            disabled={isLoading}>
                             {isLoading ? (
                                 <span className="flex gap-2 items-center">
                                     <Spinner />

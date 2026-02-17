@@ -54,7 +54,6 @@ export function Notification() {
                 pageSize: PAGESIZE
             }
             const notif = await getNotification(payload)
-            console.log(notif)
             setDataNotification(notif.data)
             setMaxPage(notif.totalPages)
         } catch (err) {

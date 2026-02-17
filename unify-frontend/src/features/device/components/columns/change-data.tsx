@@ -9,7 +9,6 @@ import {
     SheetTitle,
     SheetTrigger,
 } from "@/components/ui/sheet"
-import { Plus } from "lucide-react";
 import {
     Select,
     SelectContent,
@@ -26,7 +25,6 @@ import {
     DialogFooter,
     DialogHeader,
     DialogTitle,
-    DialogTrigger,
 } from "@/components/ui/dialog"
 import { useState } from "react";
 import { handleIPv4Input } from "@/utils/ipv4";
@@ -60,11 +58,10 @@ const NewDataTable = ({ row, handleFetchData }: ChangeDataProps) => {
     const {
         register,
         handleSubmit,
-        setValue,
         reset,
         control,
         watch,
-        formState: { errors, isSubmitting },
+        formState: { errors },
     } = useForm<UserFormValues>({
         resolver: zodResolver(DeviceSchemas),
         defaultValues: {
@@ -74,6 +71,7 @@ const NewDataTable = ({ row, handleFetchData }: ChangeDataProps) => {
             macAddress: row.macAddress,
             roomNumber: row.roomNumber,
             type: (row.type as DeviceType) ?? undefined,
+            deviceProduct: row.deviceProduct
         },
     });
 
@@ -313,7 +311,22 @@ const NewDataTable = ({ row, handleFetchData }: ChangeDataProps) => {
                                     )}
                                 />
                             </div>
-
+                            <div className="space-y-1">
+                                <Label className="text-xs text-muted-foreground">
+                                    Product
+                                </Label>
+                                <Controller
+                                    name="deviceProduct"
+                                    control={control}
+                                    render={({ field }) => (
+                                        <Input
+                                            {...field}
+                                            placeholder="Product..."
+                                            className="h-9 text-sm"
+                                        />
+                                    )}
+                                />
+                            </div>
                         </div>
                     </div>
                     <div className="space-y-1 px-4">

@@ -51,6 +51,7 @@ export type CreateDevicePayload = {
   roomNumber?: string;
   description: string;
   type: DeviceType;
+  deviceProduct : string;
 };
 
 export const addDevice = async (payload: CreateDevicePayload) => {

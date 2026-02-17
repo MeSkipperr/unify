@@ -32,7 +32,6 @@ const TraceDetailGroup = ({ traceId }: { traceId: string }) => {
         if(page === 1) start()
         try {
             const res = await getResultMTR(traceId, { page: page, pageSize: MAX_POINTS })
-            console.log(res)
 
             setMaxPage(res.totalPages)
             const parsed: ChartData[] = res.data.map((item: any) => ({

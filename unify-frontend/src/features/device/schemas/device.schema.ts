@@ -35,6 +35,10 @@ export const DeviceSchemas = z.object({
         .string()
         .min(5, "Description must be at least 5 characters"),
 
+    deviceProduct: z
+        .string()
+        .min(5, "Devices Product must be at least 3 characters"),
+
     type: z
         .nativeEnum(DeviceType)
         .refine(val => val !== undefined, {

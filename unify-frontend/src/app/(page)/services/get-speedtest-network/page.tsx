@@ -48,7 +48,6 @@ export default async function Page() {
     }
 
     const res = await response.json()
-    console.log(res.config)
 
     const service: Services<ConfigProps> = {
         id: res.id,

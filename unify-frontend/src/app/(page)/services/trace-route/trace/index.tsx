@@ -87,7 +87,6 @@ const TraceGroup = () => {
                     sendNotification: item.SendNotification,
                 }))
 
-                // console.log(session)
                 setDatas(session)
             } catch (error) {
                 console.log(error)

@@ -77,19 +77,19 @@ const DeviceTableData = (
         try {
             const result = await getDevices(dataPayload)
             setTotalData(result.total)
-            const devices: Device[] = result.data.map((item: any) => ({
-                id: item.ID,
+            const devices: Device[] = result.data.map((item: Device) => ({
+                id: item.id,
                 index: item.index,
-                name: item.Name,
-                ipAddress: item.IPAddress,
-                macAddress: item.MacAddress,
-                roomNumber: item.RoomNumber,
-                isConnect: item.IsConnect,
-                type: item.Type,
-                description: item.Description,
-                notification: item.Notification,
-                statusUpdatedAt: item.Status_updated_at,
-                errorCount: item.ErrorCount
+                name: item.name,
+                ipAddress: item.ipAddress,
+                macAddress: item.macAddress,
+                roomNumber: item.roomNumber,
+                isConnect: item.isConnect,
+                type: item.type,
+                description: item.description,
+                notification: item.notification,
+                statusUpdatedAt: item.statusUpdatedAt,
+                deviceProduct: item.deviceProduct
             }))
             setData(devices)
         } catch (err) {

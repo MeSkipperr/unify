@@ -155,6 +155,11 @@ const ActionsColumns = ({ row, handleFetchData }: ActionsProps) => {
                         Port Forward
                     </Link>
                 </DropdownMenuItem>
+                <DropdownMenuItem >
+                    <Link href={`/services/adb?ip-address=${row.ipAddress}&name=${row.name}`} className='size-full'>
+                        ADB
+                    </Link>
+                </DropdownMenuItem>
                 <AlertDialog>
                     <AlertDialogTrigger asChild>
                         <Button variant="ghost" className='text-destructive w-full flex justify-start gap-0 py-0 px-2 hover:text-destructive'>

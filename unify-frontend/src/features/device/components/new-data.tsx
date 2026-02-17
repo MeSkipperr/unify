@@ -71,6 +71,7 @@ const NewDataTable = ({ handleFetchData }: NewDataProps) => {
             macAddress: "",
             roomNumber: "",
             type: undefined,
+            deviceProduct:""
         },
     });
 
@@ -295,6 +296,22 @@ const NewDataTable = ({ handleFetchData }: NewDataProps) => {
                                                     e.target.value.toUpperCase().trim()
                                                 )
                                             }
+                                        />
+                                    )}
+                                />
+                            </div>
+                            <div className="space-y-1">
+                                <Label className="text-xs text-muted-foreground">
+                                    Product
+                                </Label>
+                                <Controller
+                                    name="deviceProduct"
+                                    control={control}
+                                    render={({ field }) => (
+                                        <Input
+                                            {...field}
+                                            placeholder="Product..."
+                                            className="h-9 text-sm"
                                         />
                                     )}
                                 />

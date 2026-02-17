@@ -56,6 +56,10 @@ export const columns: ColumnDef<Device>[] =
             header: 'Type',
         },
         {
+            accessorKey: 'deviceProduct',
+            header: 'Product',
+        },
+        {
             accessorKey: 'statusUpdatedAt',
             header: 'Last Update',
             cell: ({ row }) => (
