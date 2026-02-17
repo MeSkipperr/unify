@@ -61,12 +61,13 @@ func GetDevices(c *gin.Context) {
 
 type CreateDeviceRequest struct {
 	NormalizedPayload struct {
-		Name        string `json:"name" binding:"required"`
-		IPAddress   string `json:"ipAddress" binding:"required"`
-		MacAddress  string `json:"macAddress" binding:"required"`
-		RoomNumber  string `json:"roomNumber"`
-		Description string `json:"description" binding:"required"`
-		Type        string `json:"type" binding:"required"`
+		Name          string `json:"name" binding:"required"`
+		IPAddress     string `json:"ipAddress" binding:"required"`
+		MacAddress    string `json:"macAddress" binding:"required"`
+		RoomNumber    string `json:"roomNumber"`
+		Description   string `json:"description" binding:"required"`
+		Type          string `json:"type" binding:"required"`
+		DeviceProduct string `json:"deviceProduct" binding:"required"`
 	} `json:"normalizedPayload" binding:"required"`
 }
 
@@ -112,16 +113,17 @@ func CreateDevice() gin.HandlerFunc {
 		}
 
 		device := models.Devices{
-			IPAddress:         ip,
-			Name:              strings.TrimSpace(payload.Name),
-			RoomNumber:        strings.ToUpper(strings.TrimSpace(payload.RoomNumber)),
-			Description:       strings.TrimSpace(payload.Description),
-			Type:              deviceType,
-			MacAddress:        mac,
-			IsConnect:         false,
-			ErrorCount:        0,
-			Notification:      true,
-			Status_updated_at: time.Now().UTC(),
+			IPAddress:       ip,
+			Name:            strings.TrimSpace(payload.Name),
+			RoomNumber:      strings.ToUpper(strings.TrimSpace(payload.RoomNumber)),
+			Description:     strings.TrimSpace(payload.Description),
+			DeviceProduct:   payload.DeviceProduct,
+			Type:            deviceType,
+			MacAddress:      mac,
+			IsConnect:       false,
+			ErrorCount:      0,
+			Notification:    true,
+			StatusUpdatedAt: time.Now().UTC(),
 		}
 
 		if err := database.DB.Create(&device).Error; err != nil {
@@ -208,6 +210,7 @@ func ChangeDevice() gin.HandlerFunc {
 		device.RoomNumber = strings.ToUpper(strings.TrimSpace(payload.RoomNumber))
 		device.Description = strings.TrimSpace(payload.Description)
 		device.Type = deviceType
+		device.DeviceProduct = payload.DeviceProduct
 
 		if err := database.DB.Save(&device).Error; err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{

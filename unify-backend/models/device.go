@@ -25,18 +25,19 @@ const (
 )
 
 type Devices struct {
-	ID                uuid.UUID  `gorm:"type:uuid;default:gen_random_uuid();primaryKey"`
-	IPAddress         string     `gorm:"size:45;not null"`
-	IsConnect         bool       `gorm:"default:false"`
-	ErrorCount        int        `gorm:"default:0"`
-	Name              string     `gorm:"size:100;uniqueIndex;not null"`
-	RoomNumber        string     `gorm:"size:50"`
-	Description       string     `gorm:"type:text"`
-	Type              DeviceType `gorm:"type:varchar(30);not null"`
-	Notification      bool       `gorm:"default:false"`
-	MacAddress        string     `gorm:"size:50"`
-	Status_updated_at time.Time
-	CreatedAt         time.Time `gorm:"autoCreateTime"`
+	ID              uuid.UUID  `gorm:"type:uuid;default:gen_random_uuid();primaryKey" json:"id"`
+	IPAddress       string     `gorm:"size:45;not null" json:"ipAddress"`
+	IsConnect       bool       `gorm:"default:false" json:"isConnect"`
+	ErrorCount      int        `gorm:"default:0" json:"errorCount"`
+	Name            string     `gorm:"size:100;uniqueIndex;not null" json:"name"`
+	RoomNumber      string     `gorm:"size:50" json:"roomNumber"`
+	Description     string     `gorm:"type:text" json:"description"`
+	Type            DeviceType `gorm:"type:varchar(30);not null" json:"type"`
+	Notification    bool       `gorm:"default:false" json:"notification"`
+	MacAddress      string     `gorm:"size:50" json:"macAddress"`
+	DeviceProduct   string     `gorm:"type:varchar(255)" json:"deviceProduct"`
+	StatusUpdatedAt time.Time  `json:"statusUpdatedAt"`
+	CreatedAt       time.Time  `gorm:"autoCreateTime" json:"createdAt"`
 }
 
 var devicePorts = map[DeviceType][]int{

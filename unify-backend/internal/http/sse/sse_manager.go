@@ -30,8 +30,8 @@ func (m *SSEManager) Subscribe(w http.ResponseWriter, r *http.Request, channelNa
 	origin := r.Header.Get("Origin")
 
 	allowedOrigins := map[string]bool{
+		"http://localhost:80": true,
 		"http://localhost:3000": true,
-		"http://localhost:5500": true,
 	}
 
 	if allowedOrigins[origin] {
