@@ -19,7 +19,7 @@ import { TableQuery } from "../table/types";
 import { Skeleton } from "@/components/ui/skeleton";
 
 const PAGESIZE = 25;
-const MAX_NOTIFICATION = 100;
+const MAX_NOTIFICATION = 25;
 
 export function Notification() {
     const [open, setOpen] = useState(false)
@@ -95,7 +95,10 @@ export function Notification() {
                     variant="ghost"
                     size="icon"
                     className="relative p-2"
-                    onClick={() => setHasNewNotification(false)}
+                    onClick={() => {
+                        setHasNewNotification(false)
+                        fetchNotification()
+                    }}
                 >
                     <Bell className="size-5" />
                     {hasNewNotification && (

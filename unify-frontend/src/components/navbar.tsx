@@ -7,6 +7,8 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel,
 import { SidebarTrigger } from '@/components/ui/sidebar'
 import { ModeToggle } from './mode-toggle'
 import { Notification } from './notification'
+import { logOutRequest } from '@/services/auth.service'
+import { useLogout } from '@/lib/auth'
 
 
 export default function AppNavbar() {
@@ -32,7 +34,9 @@ export default function AppNavbar() {
                     <DropdownMenuContent align="end">
                         <DropdownMenuLabel>admin</DropdownMenuLabel>
                         <DropdownMenuItem className="text-destructive hover:cursor-pointer">
-                            <LogOut className="mr-2 h-4 w-4" /> Logout
+                            <Button variant="ghost" onClick={useLogout()} >
+                                <LogOut className="mr-2 h-4 w-4" /> Logout
+                            </Button>
                         </DropdownMenuItem>
                     </DropdownMenuContent>
                 </DropdownMenu>
