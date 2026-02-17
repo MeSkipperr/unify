@@ -133,3 +133,27 @@ func RefreshTokenHandler(c *gin.Context) {
 	c.SetCookie("token", newAccessToken, int(utils.AccessTokenTTL.Seconds()), "/", "", true, true)
 	c.JSON(200, gin.H{"message": "token refreshed"})
 }
+
+func LogoutHandler(c *gin.Context) {
+	// Hapus Access Token
+	c.SetCookie(
+		"token",
+		"",
+		-1, 
+		"/",
+		"",
+		true, 
+		true, 
+	)
+
+	c.SetCookie(
+		"refresh_token",
+		"",
+		-1,
+		"/",
+		"",
+		true,
+		true,
+	)
+	c.JSON(200, gin.H{"message": "logged out successfully"})
+}

@@ -76,6 +76,7 @@ func NewHandler(m *worker.Manager) *gin.Engine {
 		auth.POST("/login", services.LoginHandler)
 		auth.POST("/refresh", services.RefreshTokenHandler)
 		auth.POST("/me", services.Me)
+		auth.POST("/logout", services.LogoutHandler)
 	}
 
 	events := router.Group("/events")
