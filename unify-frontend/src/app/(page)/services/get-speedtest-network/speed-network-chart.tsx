@@ -71,12 +71,12 @@ const SpeedNetworkChart = ({ information }: SpeedNetworkChartProps) => {
             try {
                 const result = await getSpeedTestResult(query)
                 const mappedData: DataSpeedTestResultProps[] = result.map((item: any) => ({
-                    date: item.TestedAt,
-                    ping: item.PingMs,
-                    upload: item.UploadMbps,
-                    download: item.DownloadMbps,
+                    date: item.testedAt,
+                    ping: item.pingMs,
+                    upload: item.uploadMbps,
+                    download: item.downloadMbps,
                 }))
-                setServerName(result[0].ServerName)
+                setServerName(result[0].serverName)
                 console.log(mappedData)
                 setData(mappedData)
 

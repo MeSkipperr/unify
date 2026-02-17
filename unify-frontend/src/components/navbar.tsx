@@ -1,15 +1,15 @@
 'use client'
 
 
-import { Bell, LogOut, User } from 'lucide-react'
+import { LogOut, User } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import { SidebarTrigger } from '@/components/ui/sidebar'
 import { ModeToggle } from './mode-toggle'
+import { Notification } from './notification'
 
 
 export default function AppNavbar() {
-    const newNotification = true;
     return (
         <nav className="flex h-14 items-center justify-between border-b px-4 sticky top-0 bg-background z-50">
             <div className="flex items-center gap-2">
@@ -19,18 +19,7 @@ export default function AppNavbar() {
 
 
             <div className="flex items-center gap-2">
-                <Button
-                    variant="ghost"
-                    size="icon"
-                    className="relative hover:cursor-pointer p-2 "
-                >
-                    <Bell className="size-5" />
-
-                    {newNotification &&
-                        <span className="absolute top-1 right-1 h-1.5 w-1.5 rounded-full bg-red-500" />
-                    }
-                </Button>
-
+                <Notification />
                 <ModeToggle />
 
 
