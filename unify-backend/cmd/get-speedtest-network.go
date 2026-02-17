@@ -28,7 +28,7 @@ type networkConfig struct {
 	IPAddress string `json:"ip_address"`
 }
 
-func sendSSESpeedtest( data string) {
+func sendSSESpeedtest(data models.SpeedtestResult) {
 	sseManager := worker.ManagerGlobal.GetSSE()
 
 	res := sse.ServicesEvent{
@@ -81,8 +81,6 @@ func GetSpeedtestNetwork(manager *worker.Manager) (*worker.Worker, error) {
 					services.LogInfo(ServiceGetSpeedtestNetwork, "Running speedtest for IP "+network.IPAddress+" and server ID "+serverID)
 					result, err := speedtest.Run(network.IPAddress, serverID)
 					if err != nil {
-					sendSSESpeedtest( "darta")
-
 						services.LogError(ServiceGetSpeedtestNetwork, "Failed to run speedtest for IP "+network.IPAddress+" and server ID "+serverID+": "+err.Error())
 						continue
 					}
@@ -112,6 +110,9 @@ func GetSpeedtestNetwork(manager *worker.Manager) (*worker.Worker, error) {
 						services.LogError(ServiceGetSpeedtestNetwork, "Failed to save speedtest result for IP "+network.IPAddress+" and server ID "+serverID+": "+err.Error())
 						continue
 					}
+
+					sendSSESpeedtest(resultRecord)
+
 				}
 			}
 			services.LogInfo(ServiceGetSpeedtestNetwork, "Completed Get Speedtest Network Service")

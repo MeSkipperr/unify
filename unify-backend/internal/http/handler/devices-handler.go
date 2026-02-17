@@ -2,12 +2,14 @@ package handler
 
 import (
 	"bytes"
+	"fmt"
 	"io"
 	"net/http"
 	"strconv"
 	"strings"
 	"time"
 	"unify-backend/internal/database"
+	"unify-backend/internal/notification"
 	"unify-backend/internal/services"
 	"unify-backend/models"
 	"unify-backend/utils"
@@ -130,6 +132,9 @@ func CreateDevice() gin.HandlerFunc {
 			return
 		}
 
+		notif := buildDeviceNotification(device, models.DeviceCreated)
+		notification.SSENotification(notif)
+
 		c.JSON(http.StatusCreated, gin.H{
 			"message": "Device created successfully",
 			"data":    device,
@@ -212,6 +217,9 @@ func ChangeDevice() gin.HandlerFunc {
 			return
 		}
 
+		notif := buildDeviceNotification(device, models.DeviceUpdated)
+		notification.SSENotification(notif)
+
 		c.JSON(http.StatusOK, gin.H{
 			"message": "Device updated successfully",
 			"data":    device,
@@ -249,6 +257,9 @@ func DeleteDevice() gin.HandlerFunc {
 			})
 			return
 		}
+
+		notif := buildDeviceNotification(device, models.DeviceDeleted)
+		notification.SSENotification(notif)
 
 		c.JSON(http.StatusOK, gin.H{
 			"message": "Device deleted successfully",
@@ -305,5 +316,40 @@ func ChangeNotification() gin.HandlerFunc {
 			"message": "Notification updated successfully",
 			"data":    device,
 		})
+	}
+}
+
+func buildDeviceNotification(device models.Devices, action models.DeviceAction) models.Notification {
+	var level models.NotificationLevel
+	var title string
+	var detail string
+
+	switch action {
+	case models.DeviceCreated:
+		level = models.NoticationStatusInfo
+		title = fmt.Sprintf("[INFO] Device %s Created", device.Name)
+		detail = fmt.Sprintf("Device %s was successfully created and is now registered in the system.", device.Name)
+
+	case models.DeviceUpdated:
+		level = models.NoticationStatusInfo
+		title = fmt.Sprintf("[INFO] Device %s Updated", device.Name)
+		detail = fmt.Sprintf("Device %s configuration was successfully updated.", device.Name)
+
+	case models.DeviceDeleted:
+		level = models.NoticationStatusAlert
+		title = fmt.Sprintf("[ALERT] Device %s Deleted", device.Name)
+		detail = fmt.Sprintf("Device %s was removed from the system.", device.Name)
+
+	default:
+		level = models.NoticationStatusInfo
+		title = fmt.Sprintf("[INFO] Device %s Modified", device.Name)
+		detail = fmt.Sprintf("Device %s has been modified.", device.Name)
+	}
+
+	return models.Notification{
+		Level:  level,
+		Title:  title,
+		Detail: detail,
+		URL:    fmt.Sprintf("/devices?search=%s", device.Name),
 	}
 }

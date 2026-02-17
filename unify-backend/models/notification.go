@@ -9,10 +9,10 @@ import (
 type NotificationLevel string
 
 const (
-	NoticationStatusAlert   NotificationLevel = "notification-alert"
-	NoticationStatusInfo    NotificationLevel = "notification-info"
-	NoticationStatusWarning NotificationLevel = "notification-warning"
-	NoticationStatusError   NotificationLevel = "notification-error"
+	NoticationStatusAlert   NotificationLevel = "alert"
+	NoticationStatusInfo    NotificationLevel = "info"
+	NoticationStatusWarning NotificationLevel = "warning"
+	NoticationStatusError   NotificationLevel = "error"
 )
 
 type Notification struct {

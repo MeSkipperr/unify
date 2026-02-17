@@ -16,6 +16,14 @@ const (
 	SWIPTV DeviceType = "sw_iptv"
 )
 
+type DeviceAction string
+
+const (
+	DeviceCreated DeviceAction = "created"
+	DeviceUpdated DeviceAction = "updated"
+	DeviceDeleted DeviceAction = "deleted"
+)
+
 type Devices struct {
 	ID                uuid.UUID  `gorm:"type:uuid;default:gen_random_uuid();primaryKey"`
 	IPAddress         string     `gorm:"size:45;not null"`

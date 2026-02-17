@@ -64,7 +64,7 @@ func NewHandler(m *worker.Manager) *gin.Engine {
 			"Origin",
 			"Content-Type",
 			"Authorization",
-			"X-Timezone", 
+			"X-Timezone",
 		},
 		AllowCredentials: true,
 	}))
@@ -103,6 +103,11 @@ func NewHandler(m *worker.Manager) *gin.Engine {
 			devices.PUT("/:id", handler.ChangeDevice())
 			devices.DELETE("/:id", handler.DeleteDevice())
 			devices.PATCH("/:id/notification", handler.ChangeNotification())
+		}
+		// ----- NOTIF -----
+		notification := api.Group("/notification")
+		{
+			notification.GET("", handler.GetNotifications())
 		}
 
 		// =========================

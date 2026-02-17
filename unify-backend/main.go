@@ -1,15 +1,20 @@
 package main
 
 import (
+	"fmt"
 	"log"
+	"math/rand"
 	"net/http"
+	"time"
 	"unify-backend/cmd"
 	"unify-backend/config"
 	"unify-backend/internal/database"
 	api "unify-backend/internal/http"
 	"unify-backend/internal/http/sse"
+	"unify-backend/internal/notification"
 	"unify-backend/internal/queue"
 	"unify-backend/internal/worker"
+	"unify-backend/models"
 
 	"github.com/joho/godotenv"
 	_ "github.com/lib/pq"
@@ -38,7 +43,7 @@ func main() {
 		cmd.RunPortForwardSession,
 		cmd.RunMTRSession,
 	})
-
+	StartAutoDeviceNotification()
 	for _, err := range errs {
 		log.Println("worker error:", err)
 	}
@@ -54,4 +59,49 @@ func main() {
 	if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 		log.Fatal(err)
 	}
+}
+
+func StartAutoDeviceNotification() {
+	go func() {
+		ticker := time.NewTicker(10 * time.Second)
+		defer ticker.Stop()
+
+		for {
+			<-ticker.C
+
+			isOnline := rand.Intn(2) == 0
+			now := time.Now()
+
+			var level models.NotificationLevel
+			var subject string
+			var detail string
+
+			if isOnline {
+				level = models.NoticationStatusInfo
+				subject = fmt.Sprintf("[INFO] %s - UP", "DPSCY")
+				detail = fmt.Sprintf(
+					"Device %s is reachable at %s.",
+					"DPSCY",
+					now.Format("15:04:05"),
+				)
+			} else {
+				level = models.NoticationStatusAlert
+				subject = fmt.Sprintf("[ALERT] %s - DOWN", "DPSCY")
+				detail = fmt.Sprintf(
+					"Device %s is unreachable at %s.",
+					"DPSCY",
+					now.Format("15:04:05"),
+				)
+			}
+
+			notificationPayload := models.Notification{
+				Level:  level,
+				Title:  subject,
+				Detail: detail,
+				URL:    fmt.Sprintf("/devices?search=%s","DPSCY"),
+			}
+
+			notification.SSENotification(notificationPayload)
+		}
+	}()
 }

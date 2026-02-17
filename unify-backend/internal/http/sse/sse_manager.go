@@ -12,8 +12,8 @@ type Client struct {
 }
 
 type SSEManager struct {
-	mu       sync.RWMutex
-	clients  map[string]map[*Client]bool // channelName -> clients
+	mu      sync.RWMutex
+	clients map[string]map[*Client]bool // channelName -> clients
 }
 
 func NewSSEManager() *SSEManager {
@@ -27,7 +27,16 @@ func (m *SSEManager) Subscribe(w http.ResponseWriter, r *http.Request, channelNa
 	w.Header().Set("Content-Type", "text/event-stream")
 	w.Header().Set("Cache-Control", "no-cache")
 	w.Header().Set("Connection", "keep-alive")
-	w.Header().Set("Access-Control-Allow-Origin", "*")
+	origin := r.Header.Get("Origin")
+
+	allowedOrigins := map[string]bool{
+		"http://localhost:3000": true,
+		"http://localhost:5500": true,
+	}
+
+	if allowedOrigins[origin] {
+		w.Header().Set("Access-Control-Allow-Origin", origin)
+	}
 
 	flusher, ok := w.(http.Flusher)
 	if !ok {
