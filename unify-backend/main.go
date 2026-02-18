@@ -9,6 +9,7 @@ import (
 	api "unify-backend/internal/http"
 	"unify-backend/internal/http/sse"
 	"unify-backend/internal/queue"
+	"unify-backend/internal/services"
 	"unify-backend/internal/worker"
 
 	"github.com/joho/godotenv"
@@ -22,6 +23,11 @@ func main() {
 	}
 	database.Connect()
 	database.Migrate()
+
+	err = services.StopAllServices()
+	if err != nil {
+		log.Println("Error stopping services:", err)
+	}
 
 	manager := worker.NewManager()
 	sseManager := sse.NewSSEManager()
@@ -45,8 +51,8 @@ func main() {
 	apiHandler := api.NewHandler(manager)
 
 	server := &http.Server{
-		Addr:    config.ServerPort, 
-		Handler: apiHandler,       
+		Addr:    config.ServerPort,
+		Handler: apiHandler,
 	}
 
 	log.Println("Server running at: ", config.ServerPort)
