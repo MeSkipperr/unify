@@ -7,6 +7,7 @@ import (
 	"github.com/gin-gonic/gin"
 
 	"unify-backend/cmd"
+	"unify-backend/config"
 	"unify-backend/internal/http/handler"
 	"unify-backend/internal/http/middleware"
 	"unify-backend/internal/http/sse"
@@ -52,11 +53,9 @@ func NewHandler(m *worker.Manager) *gin.Engine {
 
 	router := gin.Default()
 	router.RemoveExtraSlash = true
+	cfg := config.LoadConfig()
 	router.Use(cors.New(cors.Config{
-		AllowOrigins: []string{
-			"http://localhost:3000",
-			"http://localhost:80",
-		},
+		AllowOrigins: cfg.AllowedOrigins,
 		AllowMethods: []string{
 			"GET", "POST", "PUT", "DELETE", "PATCH",
 		},
@@ -90,6 +89,9 @@ func NewHandler(m *worker.Manager) *gin.Engine {
 		events.GET("/mtr", func(c *gin.Context) {
 			h.sse.Subscribe(c.Writer, c.Request, sse.SSEChannelMTR)
 		})
+		events.GET("/dashboard", func(c *gin.Context) {
+			h.sse.Subscribe(c.Writer, c.Request, sse.SSEChannelDashboard)
+		})
 	}
 
 	api := router.Group("/api", middleware.AuthMiddleware)
@@ -104,7 +106,7 @@ func NewHandler(m *worker.Manager) *gin.Engine {
 			devices.PUT("/:id", handler.ChangeDevice())
 			devices.DELETE("/:id", handler.DeleteDevice())
 			devices.PATCH("/:id/notification", handler.ChangeNotification())
-			devices.GET("/summary", handler.GetDeviceSummary())
+			devices.GET("/summary", handler.GetDeviceSummaryHandler())
 		}
 		// ----- NOTIF -----
 		notification := api.Group("/notification")

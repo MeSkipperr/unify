@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"sync"
+	"unify-backend/config"
 )
 
 type Client struct {
@@ -29,12 +30,14 @@ func (m *SSEManager) Subscribe(w http.ResponseWriter, r *http.Request, channelNa
 	w.Header().Set("Connection", "keep-alive")
 	origin := r.Header.Get("Origin")
 
-	allowedOrigins := map[string]bool{
-		"http://localhost:80": true,
-		"http://localhost:3000": true,
+	cfg := config.LoadConfig() 
+
+	allowedMap := make(map[string]bool)
+	for _, o := range cfg.AllowedOrigins {
+		allowedMap[o] = true
 	}
 
-	if allowedOrigins[origin] {
+	if allowedMap[origin] {
 		w.Header().Set("Access-Control-Allow-Origin", origin)
 	}
 

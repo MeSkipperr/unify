@@ -357,74 +357,26 @@ func buildDeviceNotification(device models.Devices, action models.DeviceAction) 
 	}
 }
 
-func GetDeviceSummary() gin.HandlerFunc {
+func GetDeviceSummaryHandler() gin.HandlerFunc {
 	return func(c *gin.Context) {
-
 		typeParam := c.Query("type")
 
-		// 🔹 Jika ada query type → return 1 type saja
 		if typeParam != "" {
-
-			var result struct {
-				Total   int64
-				Online  int64
-				Offline int64
-			}
-
-			err := database.DB.
-				Model(&models.Devices{}).
-				Select(`
-					COUNT(*) as total,
-					SUM(CASE WHEN is_connect = true THEN 1 ELSE 0 END) as online,
-					SUM(CASE WHEN is_connect = false THEN 1 ELSE 0 END) as offline
-				`).
-				Where("type = ?", typeParam).
-				Scan(&result).Error
-
+			data, err := services.GetDeviceSummaryByType(typeParam)
 			if err != nil {
-				c.JSON(http.StatusInternalServerError, gin.H{
-					"error": err.Error(),
-				})
+				c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 				return
 			}
-
-			c.JSON(http.StatusOK, gin.H{
-				"type":    typeParam,
-				"total":   result.Total,
-				"online":  result.Online,
-				"offline": result.Offline,
-			})
+			c.JSON(http.StatusOK, data)
 			return
 		}
 
-		// 🔹 Jika tidak ada query → return semua type
-		var results []struct {
-			Type    models.DeviceType `json:"type"`
-			Total   int64             `json:"total"`
-			Online  int64             `json:"online"`
-			Offline int64             `json:"offline"`
-		}
-
-		err := database.DB.
-			Model(&models.Devices{}).
-			Select(`
-				type,
-				COUNT(*) as total,
-				SUM(CASE WHEN is_connect = true THEN 1 ELSE 0 END) as online,
-				SUM(CASE WHEN is_connect = false THEN 1 ELSE 0 END) as offline
-			`).
-			Group("type").
-			Scan(&results).Error
-
+		data, err := services.GetAllDeviceSummary()
 		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{
-				"error": err.Error(),
-			})
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			return
 		}
 
-		c.JSON(http.StatusOK, gin.H{
-			"data": results,
-		})
+		c.JSON(http.StatusOK, gin.H{"data": data})
 	}
 }

@@ -8,6 +8,7 @@ import (
 	"unify-backend/internal/core/arp"
 	"unify-backend/internal/core/port"
 	"unify-backend/internal/database"
+	"unify-backend/internal/http/sse"
 	"unify-backend/internal/mailer"
 	"unify-backend/internal/notification"
 	"unify-backend/internal/services"
@@ -109,7 +110,7 @@ func sendNotification(dev models.Devices, isConnect bool) {
 	}
 
 	notification.SSENotification(notificationPayload)
-	
+
 	notification.UserNotificationChannel(mailer.EmailData{
 		Subject:        subject,
 		BodyTemplate:   email.DeviceStatusEmail(dev, isConnect),
@@ -141,6 +142,24 @@ func updateDeviceStatus(
 	}
 
 	return nil
+}
+
+func sendDeviceStatusCount(deviceType string) {
+	res, err := services.GetDeviceSummaryByType(deviceType)
+	if err != nil {
+		services.LogError(ServiceMonitoringNetwork, "Error getting device summary: "+err.Error())
+		return
+	}
+
+	dashboardPayload := services.DeviceSummary{
+		Type:    res.Type,
+		Total:   res.Total,
+		Online:  res.Online,
+		Offline: res.Offline,
+	}
+	sseManager := worker.ManagerGlobal.GetSSE()
+
+	sseManager.Broadcast(sse.SSEChannelDashboard, dashboardPayload)
 }
 
 func processConnection(dev models.Devices, maxTimes int) {
@@ -180,6 +199,8 @@ func processConnection(dev models.Devices, maxTimes int) {
 	if err := updateDeviceStatus(dev.ID, newIsConnect, dev.ErrorCount); err != nil {
 		services.LogError(ServiceMonitoringNetwork, "Failed to update device status: "+err.Error())
 	}
+
+	sendDeviceStatusCount(string(dev.Type))
 }
 
 type monitoringNetworkConfig struct {

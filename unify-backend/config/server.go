@@ -7,7 +7,6 @@ import (
 
 const ServerPort = ":8080"
 
-
 type Config struct {
 	AllowedOrigins []string
 }
@@ -25,4 +24,12 @@ func LoadConfig() *Config {
 	return &Config{
 		AllowedOrigins: allowedOrigins,
 	}
+}
+
+func (c *Config) AllowedOriginsMap() map[string]bool {
+	m := make(map[string]bool)
+	for _, origin := range c.AllowedOrigins {
+		m[origin] = true
+	}
+	return m
 }

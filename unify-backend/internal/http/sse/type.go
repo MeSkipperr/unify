@@ -8,10 +8,11 @@ import (
 )
 
 const (
-	SSEChannelNotif    = "notification"
-	SSEChannelLogs     = "logs"
-	SSEChannelServices = "services"
-	SSEChannelMTR      = "mtr"
+	SSEChannelNotif     = "notification"
+	SSEChannelLogs      = "logs"
+	SSEChannelServices  = "services"
+	SSEChannelMTR       = "mtr"
+	SSEChannelDashboard = "dashboard"
 )
 
 type MtrEvent struct {

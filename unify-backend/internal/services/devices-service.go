@@ -154,3 +154,54 @@ func toBoolSlice(arr []string) []bool {
 	}
 	return result
 }
+
+// DeviceSummary represents summary per device type
+type DeviceSummary struct {
+	Type    models.DeviceType `json:"type"`
+	Total   int64             `json:"total"`
+	Online  int64             `json:"online"`
+	Offline int64             `json:"offline"`
+}
+
+// 🔹 Fungsi untuk dapatkan summary per type atau semua type
+func GetDeviceSummaryByType(deviceType string) (DeviceSummary, error) {
+	var result DeviceSummary
+
+	query := database.DB.Model(&models.Devices{}).Select(`
+		COUNT(*) as total,
+		SUM(CASE WHEN is_connect = true THEN 1 ELSE 0 END) as online,
+		SUM(CASE WHEN is_connect = false THEN 1 ELSE 0 END) as offline
+	`)
+
+	if deviceType != "" {
+		query = query.Where("type = ?", deviceType)
+		result.Type = models.DeviceType(deviceType)
+	}
+
+	if err := query.Scan(&result).Error; err != nil {
+		return DeviceSummary{}, err
+	}
+
+	return result, nil
+}
+
+// 🔹 Fungsi untuk dapatkan summary semua type
+func GetAllDeviceSummary() ([]DeviceSummary, error) {
+	var results []DeviceSummary
+
+	err := database.DB.Model(&models.Devices{}).
+		Select(`
+			type,
+			COUNT(*) as total,
+			SUM(CASE WHEN is_connect = true THEN 1 ELSE 0 END) as online,
+			SUM(CASE WHEN is_connect = false THEN 1 ELSE 0 END) as offline
+		`).
+		Group("type").
+		Scan(&results).Error
+
+	if err != nil {
+		return nil, err
+	}
+
+	return results, nil
+}
