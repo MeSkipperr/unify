@@ -26,11 +26,11 @@ export default function AppSidebar() {
                         <SidebarMenu>
 
                             {/* Dashboard */}
-                            {/* <SidebarMenuItem>
+                            <SidebarMenuItem>
                                 <SidebarMenuButton asChild className="font-bold">
                                     <Link href="/dashboard">Dashboard</Link>
                                 </SidebarMenuButton>
-                            </SidebarMenuItem> */}
+                            </SidebarMenuItem>
 
                             {/* Devices */}
                             <SidebarMenuItem>
