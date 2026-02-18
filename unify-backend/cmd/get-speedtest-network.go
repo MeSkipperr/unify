@@ -3,10 +3,13 @@ package cmd
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"time"
 	"unify-backend/internal/core/ip"
 	"unify-backend/internal/database"
 	"unify-backend/internal/http/sse"
+	"unify-backend/internal/mailer"
+	"unify-backend/internal/notification"
 	"unify-backend/internal/services"
 	"unify-backend/internal/speedtest"
 	"unify-backend/internal/worker"
@@ -39,7 +42,66 @@ func sendSSESpeedtest(data models.SpeedtestResult) {
 	if sseManager != nil {
 		sseManager.Broadcast(sse.SSEChannelServices, res)
 	}
+}
 
+func sendNotificationLowInternet(data models.SpeedtestResult) {
+	subject := fmt.Sprintf("Alert: Low Internet Speed Detected on %s", data.NetworkName)
+
+	notificationPayload := models.Notification{
+		Level:  models.NoticationStatusAlert,
+		Title:  subject,
+		Detail: "One or both directions are below 10 Mbps.",
+		URL:    data.ResultURL,
+	}
+
+	notification.SSENotification(notificationPayload)
+
+	body := fmt.Sprintf(`
+Dear {{firstName}} {{lastName}},
+
+We have detected that your internet connection is currently experiencing low or unstable speeds (download or upload below 10 Mbps). Please find the latest test results below:
+
+- Test Time        : %s
+- Interface        : %s
+- Network Name     : %s
+- Internal IP      : %s
+- ISP              : %s
+- Public IP        : %s
+- Ping             : %.2f ms
+- Download Speed   : %.2f Mbps
+- Upload Speed     : %.2f Mbps
+- Server Name      : %s
+- Server Location  : %s
+- Server Country   : %s
+- Result URL       : %s
+
+Impact: You may experience slow browsing, buffering during streaming, and interruptions in calls.
+
+Our team is monitoring the situation and we will notify you once your internet performance returns to normal.
+
+Best regards,
+{{PROPERTY}}
+`, 
+		data.TestedAt,
+		data.InterfaceName,
+		data.NetworkName,
+		data.InternalIP,
+		data.ISPName,
+		data.ExternalIP,
+		data.PingMs,
+		data.DownloadMbps,
+		data.UploadMbps,
+		data.ServerName,
+		data.ServerLocation,
+		data.ServerCountry,
+		data.ResultURL,
+	)
+
+	notification.UserNotificationChannel(mailer.EmailData{
+		Subject:        subject,
+		BodyTemplate:   body,
+		FileAttachment: []string{},
+	})
 }
 
 func GetSpeedtestNetwork(manager *worker.Manager) (*worker.Worker, error) {
@@ -109,6 +171,10 @@ func GetSpeedtestNetwork(manager *worker.Manager) (*worker.Worker, error) {
 					if err := database.DB.Create(&resultRecord).Error; err != nil {
 						services.LogError(ServiceGetSpeedtestNetwork, "Failed to save speedtest result for IP "+network.IPAddress+" and server ID "+serverID+": "+err.Error())
 						continue
+					}
+
+					if resultRecord.DownloadMbps < 10.0 || resultRecord.UploadMbps < 10.0 {
+						sendNotificationLowInternet(resultRecord)
 					}
 
 					sendSSESpeedtest(resultRecord)
