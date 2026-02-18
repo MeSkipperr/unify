@@ -55,3 +55,4 @@ var commonPorts = []int{80, 443, 22, 554}
 func CommonPorts() []int {
 	return append([]int(nil), commonPorts...)
 }
+

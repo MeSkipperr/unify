@@ -104,6 +104,7 @@ func NewHandler(m *worker.Manager) *gin.Engine {
 			devices.PUT("/:id", handler.ChangeDevice())
 			devices.DELETE("/:id", handler.DeleteDevice())
 			devices.PATCH("/:id/notification", handler.ChangeNotification())
+			devices.GET("/summary", handler.GetDeviceSummary())
 		}
 		// ----- NOTIF -----
 		notification := api.Group("/notification")
