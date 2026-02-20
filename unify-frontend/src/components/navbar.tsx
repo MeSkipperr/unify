@@ -1,0 +1,46 @@
+'use client'
+
+
+import { LogOut, User } from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
+import { SidebarTrigger } from '@/components/ui/sidebar'
+import { ModeToggle } from './mode-toggle'
+import { Notification } from './notification'
+import { logOutRequest } from '@/services/auth.service'
+import { useLogout } from '@/lib/auth'
+
+
+export default function AppNavbar() {
+    return (
+        <nav className="flex h-14 items-center justify-between border-b px-4 sticky top-0 bg-background z-50">
+            <div className="flex items-center gap-2">
+                <SidebarTrigger className='size-10 cursor-pointer' />
+                <h1 className="text-xl font-extrabold tracking-wide text-primary">Unify</h1>
+            </div>
+
+
+            <div className="flex items-center gap-2">
+                <Notification />
+                <ModeToggle />
+
+
+                <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="icon" className="hover:cursor-pointer p-2">
+                            <User className="size-6" />
+                        </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                        <DropdownMenuLabel>admin</DropdownMenuLabel>
+                        <DropdownMenuItem className="text-destructive hover:cursor-pointer">
+                            <Button variant="ghost" onClick={useLogout()} >
+                                <LogOut className="mr-2 h-4 w-4" /> Logout
+                            </Button>
+                        </DropdownMenuItem>
+                    </DropdownMenuContent>
+                </DropdownMenu>
+            </div>
+        </nav>
+    )
+}

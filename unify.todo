@@ -1,0 +1,77 @@
+TO DO
+
+PATH
+/devices/device-id
+
+
+
+UNIFY-BACKEND 
+
+[X]MONITORING NETWORK 
+    /services/monitoring-network
+    [X]NOTIFIKASI KONEKSI DEVICE UP/DOWN VIA EMAIL
+    [X]UBAH DATA STATUS
+    [X] MENDAPATKAN DATA
+    [X] TESTING 
+    [X] Update Last Status Change
+
+[X] SpeedTest
+    [X] logic SpeedTest
+    [X] Testing
+
+[ ] PORT FORWARD
+    [X] logic
+    [X] Log To database
+    [X] Delete Rule when status is DISABLE
+    [X] testing
+    [ ] CRUD API
+
+[ ] MTR
+    [X] MTR Function 
+    [X] Save To database
+        [X] Save Detail Connection
+    [X] Send with web socket
+    [ ] APi call
+    [X] LOG Print
+    
+[X] TIDY UP LOG SERVICES
+
+[ ] Device
+    [ ] Last Change devices
+    [ ] Device Type : SW = Switch, Remove TYPE SWIPTV
+
+[X] Table Device
+    [X] Fetch data andd skelton
+    [X] Add State Function for Filter
+    [X] Search Bar Function
+    [X] Filter UNIFY
+    [X] Edit UI and Update Data
+    [X] Notification Function 
+    [X] Auto Field Search Bar with URL Parameter
+    [X] UI 	
+    [X] Debaunce Func
+    [X] Fetch Data use Observer
+        [X] Change observer use pagenation
+    [X] Row number
+    [X] Add New Devices and Add new device form reusable
+    [X] DElete data
+
+    [X] Sort Index & Status asc dasc
+
+[X] Device API
+    [ ] Device Mac Address
+[X] Megrate Data
+
+[ ] AUTH 
+    [X] Login Page
+    [ ] Authriazation
+
+[ ] services    
+    [X]SpeedTest
+    [ ] service api. /services -> /api/services
+    
+
+
+[ ] Reset Filter function to set default sort and filter
+
+[ ] UP down  Device Count
