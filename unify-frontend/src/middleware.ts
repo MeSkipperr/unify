@@ -39,7 +39,7 @@ export async function middleware(req: NextRequest) {
         }
     )
 
-    if (!res.ok) {
+    if (!response.ok) {
         return NextResponse.redirect(new URL("/login", req.url))
     }
 
