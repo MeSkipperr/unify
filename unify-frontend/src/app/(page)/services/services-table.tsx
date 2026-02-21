@@ -104,7 +104,7 @@ const ServicesTable = () => {
                                     <Select
                                         onValueChange={(val) => {
                                             if (!isDisabled) {
-                                                changeStatus(`/services/${data.serviceName}/status`, val)
+                                                changeStatus(`/api/services/${data.serviceName}/status`, val)
                                             }
                                         }}
                                         defaultValue={data.status}

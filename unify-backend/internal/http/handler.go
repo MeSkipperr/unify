@@ -121,6 +121,8 @@ func NewHandler(m *worker.Manager) *gin.Engine {
 		{
 			services.GET("", handler.GetServices())
 			services.GET("/:serviceName", handler.GetServiceByName())
+			services.GET("/:service/status", h.getStatus)
+			services.PUT("/:service/status", h.updateStatus)
 
 			// ----- ADB -----
 			adb := services.Group("/adb")
@@ -151,12 +153,11 @@ func NewHandler(m *worker.Manager) *gin.Engine {
 				portForward.POST("", handler.CreatePortForward())
 				portForward.PATCH("/:id/deactivate", handler.DeactivatedPortForward())
 			}
+			// Existing HTTP endpoints
+
 		}
 	}
 
-	// Existing HTTP endpoints
-	router.GET("/services/:service/status", h.getStatus)
-	router.PUT("/services/:service/status", h.updateStatus)
 
 	return router
 }
