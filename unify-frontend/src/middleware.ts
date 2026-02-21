@@ -1,5 +1,5 @@
 // import { cookies } from "next/headers"
-import { cookies } from "next/headers"
+import { cookies, headers } from "next/headers"
 import { NextRequest, NextResponse } from "next/server"
 
 const PUBLIC_PATHS = ["/login", "/register"]
@@ -16,11 +16,17 @@ export async function middleware(req: NextRequest) {
         .getAll()
         .map(c => `${c.name}=${c.value}`)
         .join("; ")
-    const origin = req.nextUrl.origin;
+
+    const headersList = await headers() 
+    const host = headersList.get("host")
+
+    const protocol = "http"
+
     const baseUrl =
-        process.env.NEXT_PUBLIC_API_BASE_URL?.replace(/\/$/, "") ||
-        origin;
-    const res = await fetch(
+        process.env.NEXT_PUBLIC_API_BASE_URL ||
+        `${protocol}://${host}`
+
+    const response = await fetch(
         `${baseUrl}/auth/me`,
         {
             method: "POST",
