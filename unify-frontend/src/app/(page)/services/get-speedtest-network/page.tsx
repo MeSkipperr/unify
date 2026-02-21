@@ -1,5 +1,5 @@
 import { Services } from "@/types/service.type"
-import { cookies } from "next/headers"
+import { cookies, headers } from "next/headers"
 import { redirect } from "next/navigation"
 import SpeedNetworkChart, { SpeedTestInformation } from "./speed-network-chart"
 import { Metadata } from "next"
@@ -31,8 +31,17 @@ export default async function Page() {
         .map(c => `${c.name}=${c.value}`)
         .join("; ")
 
+    const headersList = headers()
+    const host = headersList.get("host")
+    const protocol = process.env.NODE_ENV === "production" ? "http" : "http"
+
+    const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL
+        ? process.env.NEXT_PUBLIC_API_BASE_URL
+        : `${protocol}://${host}`
+
+
     const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/services/${serviceName}`,
+        `${baseUrl }/api/services/${serviceName}`,
         {
             method: "GET",
             headers: {
@@ -73,17 +82,17 @@ export default async function Page() {
         <div>
             {service.config.network.map((net) => (
                 <div key={net.name} className="mb-4">
-                        {service.config.serverId.map((serverId) => {
-                            const info: SpeedTestInformation = {
-                                interface: net.interface,
-                                ipAddress: net.ipAddress,
-                                name: net.name,
-                                serverId: serverId
-                            }
-                            return (
-                                <SpeedNetworkChart information={info} key={serverId}/>
-                            )
-                        })}
+                    {service.config.serverId.map((serverId) => {
+                        const info: SpeedTestInformation = {
+                            interface: net.interface,
+                            ipAddress: net.ipAddress,
+                            name: net.name,
+                            serverId: serverId
+                        }
+                        return (
+                            <SpeedNetworkChart information={info} key={serverId} />
+                        )
+                    })}
                 </div>
             ))}
         </div>

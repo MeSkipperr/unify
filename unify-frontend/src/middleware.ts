@@ -16,12 +16,16 @@ export async function middleware(req: NextRequest) {
         .getAll()
         .map(c => `${c.name}=${c.value}`)
         .join("; ")
+
+    const baseUrl =
+        process.env.NEXT_PUBLIC_API_BASE_URL?.replace(/\/$/, "") ||
+        origin;
     const res = await fetch(
-        `${process.env.NEXT_PUBLIC_API_BASE_URL}/auth/me`,
+        `${baseUrl}/auth/me`,
         {
             method: "POST",
             headers: {
-                Cookie: cookieHeader, 
+                Cookie: cookieHeader,
                 "Content-Type": "application/json",
             },
             credentials: "include",
