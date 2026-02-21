@@ -31,14 +31,14 @@ export default async function Page() {
         .map(c => `${c.name}=${c.value}`)
         .join("; ")
 
-    const headersList = headers()
+    const headersList = await headers() 
     const host = headersList.get("host")
-    const protocol = process.env.NODE_ENV === "production" ? "http" : "http"
 
-    const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL
-        ? process.env.NEXT_PUBLIC_API_BASE_URL
-        : `${protocol}://${host}`
+    const protocol = "http"
 
+    const baseUrl =
+        process.env.NEXT_PUBLIC_API_BASE_URL ||
+        `${protocol}://${host}`
 
     const response = await fetch(
         `${baseUrl }/api/services/${serviceName}`,
