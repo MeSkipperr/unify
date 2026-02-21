@@ -16,7 +16,7 @@ export async function middleware(req: NextRequest) {
         .getAll()
         .map(c => `${c.name}=${c.value}`)
         .join("; ")
-
+    const origin = req.nextUrl.origin;
     const baseUrl =
         process.env.NEXT_PUBLIC_API_BASE_URL?.replace(/\/$/, "") ||
         origin;
