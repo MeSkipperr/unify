@@ -39,7 +39,17 @@ export async function middleware(req: NextRequest) {
         }
     )
 
-    if (!response.ok) {
+    const isLoggedIn = response.ok
+
+    if (pathname === "/") {
+        if (isLoggedIn) {
+            return NextResponse.redirect(new URL("/dashboard", req.url))
+        } else {
+            return NextResponse.redirect(new URL("/login", req.url))
+        }
+    }
+
+    if (!isLoggedIn) {
         return NextResponse.redirect(new URL("/login", req.url))
     }
 

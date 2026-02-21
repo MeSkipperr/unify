@@ -40,7 +40,7 @@ const LoginForm = () => {
         try {
             await loginAction({ username, password });
             // success handling / redirect
-            router.push("/")
+            router.push("/dashboard")
         } catch (error) {
             if (axios.isAxiosError(error)) {
                 if (error.status === 401) {
