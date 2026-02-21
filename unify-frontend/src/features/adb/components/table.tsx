@@ -3,7 +3,7 @@ import DataTable from "@/components/table";
 import { AdbResult } from "../types";
 import { columns } from "./columns";
 import { dataFilter, sortData } from "../filter-data";
-import { useEffect, useState , useCallback } from "react";
+import { useEffect, useState } from "react";
 import { FilterConfig } from "@/components/filter/types";
 import { SortBy } from "@/components/sort/types";
 import { TableQuery } from "@/components/table/types";
@@ -41,78 +41,69 @@ const AdbTable = ({ serviceType, hasDefaultValue = false, addNewData = false }: 
 
     const [totalData, setTotalData] = useState<number>(1);
 
-  const handleFetchData = useCallback(async (payload: TableQuery) => {
-    setIsLoading(true)
+    const handleFetchData = async (payload?: TableQuery) => {
+        setIsLoading(false)
 
-    const dataPayload: AdbQuery = {
-      page: payload.page,
-      pageSize: payload.pageSize,
-      search: payload.search,
-      date: payload.date,
-    }
+        const page = payload?.page ?? Number(searchParams.get("page")) ?? 1
+        const pageSize = payload?.pageSize ?? Number(searchParams.get("pageSize")) ?? 10
+        const search = payload?.search ?? searchParams.get("search") ?? ""
 
-    filter.forEach((filter) => {
-      const selectedValues = filter.options
-        .filter((opt) => opt.isSelected)
-        .map((opt) => opt.value)
-
-      if (selectedValues.length > 0) {
-        switch (filter.key) {
-          case "serviceType":
-            dataPayload.typeServices = selectedValues as string[]
-            break
+        const dataPayload: AdbQuery = {
+            page,
+            pageSize,
+            search,
+            date
         }
-      }
-    })
 
-    dataPayload.sort = sort
-      .filter((s) => s.value !== "none")
-      .map((s) => `${s.key}:${s.value}`)
 
-    try {
-      const result = await getAdbResults(dataPayload)
+        filter.forEach((filter) => {
+            const selectedValues = filter.options
+                .filter(opt => opt.isSelected)
+                .map(opt => opt.value)
 
-      setTotalData(result.total)
+            if (selectedValues.length > 0) {
+                switch (filter.key) {
+                    case "serviceType":
+                        dataPayload.typeServices = selectedValues as string[]
+                        break
+                }
+            }
+        })
 
-      const adbRes: AdbResult[] = result.data.map((item: any) => ({
-        id: item.ID,
-        index: item.index,
-        status: item.Status,
-        ipAddress: item.IPAddress,
-        finishTime: item.FinishTime,
-        startTime: item.StartTime,
-        port: item.Port,
-        deviceName: item.NameDevice,
-        result: item.Result,
-        serviceType: item.TypeServices,
-      }))
+        dataPayload.sort = sort
+            .filter(s => s.value !== "none")
+            .map(s => `${s.key}:${s.value}`)
 
-      setData(adbRes)
-    } catch (err) {
-      console.log(err)
-    } finally {
-      setIsLoading(false)
+        try {
+            const result = await getAdbResults(dataPayload)
+            setTotalData(result.total)
+            const adbRes: AdbResult[] = result.data.map((item: any) => ({
+                id: item.ID,
+                index: item.index,
+                status: item.Status,
+                ipAddress: item.IPAddress,
+                finishTime: item.FinishTime,
+                startTime: item.StartTime,
+                port: item.Port,
+                deviceName: item.NameDevice,
+                result: item.Result,
+                serviceType: item.TypeServices
+            }))
+            setData(adbRes)
+        } catch (err) {
+            console.log(err)
+        } finally {
+            setIsLoading(false)
+        }
     }
-  }, [filter, sort]) // ✅ dependency aman
 
-  // =============================
-  // ✅ EFFECT UNTUK FETCH
-  // =============================
-  useEffect(() => {
-    if (!date) return
+    useEffect(() => {
+        if (!date) return
 
-    // ✅ DIUBAH (fix Number(null) bug)
-    const page = Number(searchParams.get("page") || 1)
-    const pageSize = Number(searchParams.get("pageSize") || 10)
-    const search = searchParams.get("search") || ""
-
-    handleFetchData({
-      page,
-      pageSize,
-      search,
-      date: new Date(date),
-    })
-  }, [date, searchParams, handleFetchData]) // ✅ searchParams boleh di sini
+        handleFetchData({
+            date: new Date(date),
+        })
+    }, [date])
 
 
     return (
