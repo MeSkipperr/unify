@@ -62,7 +62,7 @@ func LoginHandler(c *gin.Context) {
 		int(utils.AccessTokenTTL.Seconds()),
 		"/",
 		"",
-		true,
+		false,
 		true,
 	)
 
@@ -73,7 +73,7 @@ func LoginHandler(c *gin.Context) {
 		int(utils.RefreshTokenTTL.Seconds()),
 		"/",
 		"",
-		true,
+		false,
 		true,
 	)
 
@@ -130,7 +130,7 @@ func RefreshTokenHandler(c *gin.Context) {
 		os.Getenv("JWT_SECRET"),
 	)
 
-	c.SetCookie("token", newAccessToken, int(utils.AccessTokenTTL.Seconds()), "/", "", true, true)
+	c.SetCookie("token", newAccessToken, int(utils.AccessTokenTTL.Seconds()), "/", "", false, true)
 	c.JSON(200, gin.H{"message": "token refreshed"})
 }
 
@@ -142,7 +142,7 @@ func LogoutHandler(c *gin.Context) {
 		-1, 
 		"/",
 		"",
-		true, 
+		false, 
 		true, 
 	)
 
@@ -152,7 +152,7 @@ func LogoutHandler(c *gin.Context) {
 		-1,
 		"/",
 		"",
-		true,
+		false,
 		true,
 	)
 	c.JSON(200, gin.H{"message": "logged out successfully"})
