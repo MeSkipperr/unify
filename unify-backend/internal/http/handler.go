@@ -121,8 +121,8 @@ func NewHandler(m *worker.Manager) *gin.Engine {
 		{
 			services.GET("", handler.GetServices())
 			services.GET("/:serviceName", handler.GetServiceByName())
-			services.GET("/:service/status", h.getStatus)
-			services.PUT("/:service/status", h.updateStatus)
+			services.GET("/:serviceName/status", h.getStatus)
+			services.PUT("/:serviceName/status", h.updateStatus)
 
 			// ----- ADB -----
 			adb := services.Group("/adb")
@@ -164,7 +164,7 @@ func NewHandler(m *worker.Manager) *gin.Engine {
 
 // GET /services/:service/status
 func (h *Handler) getStatus(c *gin.Context) {
-	service := c.Param("service")
+	service := c.Param("serviceName")
 	status, ok := h.manager.Status(service)
 	if !ok {
 		c.JSON(http.StatusNotFound, gin.H{"error": "service not found"})
@@ -180,7 +180,7 @@ func (h *Handler) getStatus(c *gin.Context) {
 
 // PUT /services/:service/status
 func (h *Handler) updateStatus(c *gin.Context) {
-	service := c.Param("service")
+	service := c.Param("serviceName")
 	var payload StatusPayload
 	if err := c.ShouldBindJSON(&payload); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid payload"})
