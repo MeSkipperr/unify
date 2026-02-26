@@ -15,7 +15,7 @@ func checkTCP(p Params) Result {
 	addr := net.JoinHostPort(p.Target, strconv.Itoa(p.Port))
 
 	conn, err := net.DialTimeout("tcp", addr, p.Timeout)
-	fmt.println(conn)
+	fmt.Println(conn)
 	if err != nil {
 		return Result{
 			Target:   p.Target,
