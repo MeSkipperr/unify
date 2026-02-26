@@ -4,6 +4,7 @@ import (
 	"net"
 	"strconv"
 	"time"
+	"fmt"
 )
 
 func checkTCP(p Params) Result {
