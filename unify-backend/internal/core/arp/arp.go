@@ -35,21 +35,14 @@ func Check(p Params) Result {
 			Target: p.IP,
 			Times:  1,
 		})
-
 	}
 
 	var cmd *exec.Cmd
 
 	switch runtime.GOOS {
 	case "linux":
-		if p.Interface != "" {
-			// ip neigh show dev eth0 192.168.1.1
-			cmd = exec.Command(
-				"ip", "neigh", "show", "dev", p.Interface, p.IP,
-			)
-		} else {
-			cmd = exec.Command("ip", "neigh", "show", p.IP)
-		}
+		// Use arp -a instead of ip neigh
+		cmd = exec.Command("arp", "-a", p.IP)
 
 	case "windows":
 		// interface selection not supported by arp -a
@@ -78,11 +71,18 @@ func Check(p Params) Result {
 			continue
 		}
 
+		// check if line contains the target IP
 		if strings.Contains(text, p.IP) {
+			// Example ARP line:
+			// ? (172.18.0.9) at 74:81:9a:f2:d0:04 [ether] on eno1
+			mac := extractMAC(text)
+
+			exists := mac != "" && !strings.Contains(text, "<incomplete>")
+
 			return Result{
 				IP:      p.IP,
-				MAC:     extractMAC(text),
-				Exists:  true,
+				MAC:     mac,
+				Exists:  exists,
 				RawLine: text,
 			}
 		}
@@ -93,9 +93,11 @@ func Check(p Params) Result {
 		Exists: false,
 	}
 }
+
 func extractMAC(s string) string {
 	parts := strings.Fields(s)
 	for _, p := range parts {
+		// check for MAC address format
 		if strings.Count(p, ":") == 5 || strings.Count(p, "-") == 5 {
 			return p
 		}
