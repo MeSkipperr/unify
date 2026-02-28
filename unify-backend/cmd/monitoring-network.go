@@ -88,6 +88,10 @@ func checkDeviceConnectivity(dev models.Devices) ConnectivityResult {
 }
 
 func sendNotification(dev models.Devices, isConnect bool) {
+	if(!dev.Notification){
+		return
+	}
+
 	var level models.NotificationLevel
 	var subject string
 	var detail string

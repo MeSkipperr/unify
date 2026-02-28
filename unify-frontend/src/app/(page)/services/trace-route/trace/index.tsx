@@ -127,7 +127,7 @@ const TraceGroup = () => {
                                 <TableCell>
                                     {data.status}
                                 </TableCell>
-                                <TableCell>{data.destinationIp}</TableCell>
+                                <TableCell>{data.sourceIp}</TableCell>
 
                                 {/* Destination IP */}
                                 <TableCell>{data.destinationIp}</TableCell>

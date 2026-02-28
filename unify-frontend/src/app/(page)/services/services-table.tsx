@@ -94,6 +94,7 @@ const ServicesTable = () => {
                     datas.map((data) => {
                         const url = () => {
                             if (data.serviceName === "monitoring-network") return "/devices"
+                            if (data.serviceName === "remove-youtube-data-adb" || data.serviceName === "get-uptime-adb") return "/services/adb/" + data.serviceName
                             return "/services/" + data.serviceName
                         }
                         const isDisabled = data.status !== "RUNNING" && data.status !== "STOPPED"

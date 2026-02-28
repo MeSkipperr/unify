@@ -9,16 +9,52 @@ import { getResultMTR } from "../mtr-result.api"
 import { Button } from "@/components/ui/button"
 import { ChevronLeft, ChevronRight } from "lucide-react"
 import { clamp } from "@/utils/clamp"
+import { useSSE } from "@/hooks/useSSE"
+import { MTRData } from "./types"
 
 const MAX_POINTS = 256
 
 const TraceDetailGroup = ({ traceId }: { traceId: string }) => {
+    // const {
+    //     data: mtrData,
+    //     start,
+    //     stop,
+    //     isRunning
+    // } = useMTR("http://localhost:8080/events/mtr")
+
     const {
-        data: mtrData,
         start,
         stop,
         isRunning
-    } = useMTR("http://localhost:8080/events/mtr")
+    } = useSSE<MTRData>({
+        url: "/events/mtr",
+        onMessage: (msg) => {
+            if (!msg) return
+            if (!isInitialized.current) return
+            if (msg.id !== traceId) return
+
+            console.log(msg)
+
+            setLatestHubs(msg ? mapHubsToChartData(msg.message.report.hubs) : [])
+
+            setChartLogs(prev => {
+                const next = [
+                    ...prev,
+                    {
+                        isConnect: msg.message.report.mtr.Reachable ?? false,
+                        ping: msg.message.report.mtr.AvgRTT ?? 0,
+                        time: msg.time
+                            ? new Date(msg.time).getTime()
+                            : Date.now(),
+                    },
+                ]
+
+                return next.length > MAX_POINTS
+                    ? next.slice(-MAX_POINTS)
+                    : next
+            })
+        }
+    })
 
     const [page, setPage] = useState<number>(1)
     const [maxPage, setMaxPage] = useState<number>(1)
@@ -29,7 +65,7 @@ const TraceDetailGroup = ({ traceId }: { traceId: string }) => {
     const isInitialized = useRef(false)
 
     const fetchData = async () => {
-        if(page === 1) start()
+        if (page === 1) start()
         try {
             const res = await getResultMTR(traceId, { page: page, pageSize: MAX_POINTS })
 
@@ -53,35 +89,7 @@ const TraceDetailGroup = ({ traceId }: { traceId: string }) => {
         }
 
         load()
-    }, [traceId,page])
-
-
-    useEffect(() => {
-        if (!mtrData) return
-        if (!isInitialized.current) return
-        if (mtrData.id !== traceId) return
-
-        console.log(mtrData)
-
-        setLatestHubs(mtrData ? mapHubsToChartData(mtrData.message.report.hubs) : [])
-
-        setChartLogs(prev => {
-            const next = [
-                ...prev,
-                {
-                    isConnect: mtrData.message.report.mtr.Reachable ?? false,
-                    ping: mtrData.message.report.mtr.AvgRTT ?? 0,
-                    time: mtrData.time
-                        ? new Date(mtrData.time).getTime()
-                        : Date.now(),
-                },
-            ]
-
-            return next.length > MAX_POINTS
-                ? next.slice(-MAX_POINTS)
-                : next
-        })
-    }, [mtrData])
+    }, [traceId, page])
 
 
     const handleNextChart = () => {
@@ -90,7 +98,7 @@ const TraceDetailGroup = ({ traceId }: { traceId: string }) => {
 
             if (newPage !== prev) {
                 stop()
-            } 
+            }
 
             return newPage
         })
@@ -113,10 +121,10 @@ const TraceDetailGroup = ({ traceId }: { traceId: string }) => {
                 <TraceDetail chartData={latestHubs} />
             </div>
             <div className="w-full h-1/2 flex gap-2">
-                <Button disabled={page===maxPage} className="h-full flex justify-center items-center" variant="ghost" onClick={() => handlePreviewsChart()}>
+                <Button disabled={page === maxPage} className="h-full flex justify-center items-center" variant="ghost" onClick={() => handlePreviewsChart()}>
                     <ChevronLeft />
                 </Button>
-                <ChartTraceRoute  chartData={chartLogs} />
+                <ChartTraceRoute chartData={chartLogs} />
                 <Button disabled={isRunning} className="h-full flex justify-center items-center" variant="ghost" onClick={() => handleNextChart()}>
                     <ChevronRight />
                 </Button>

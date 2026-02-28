@@ -30,7 +30,7 @@
             "command": "{adbPath} -s {ip}:{port} shell pm enable com.google.android.youtube.tv"
         },
         {
-            "key": "-youtube",
+            "key": "disable-youtube",
             "command": "{adbPath} -s {ip}:{port} shell pm disable-user --user 0 com.google.android.youtube.tv"
         },
         {
@@ -46,7 +46,7 @@
             "command": "{adbPath} -s {ip}:{port} shell getprop ro.serialno"
         },
         {
-            "key": "    ",
+            "key": "get-device-id",
             "command": "{adbPath} -s {ip}:{port} shell settings get secure android_id"
         }
     ]

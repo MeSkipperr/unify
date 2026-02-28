@@ -58,7 +58,12 @@ const NewDataTable = ({ handleFetchData }: NewDataProps) => {
     const [isUnsavedDialogOpen, setIsUnsavedDialogOpen] = useState(false);
     const [isLoading, setIsLoading] = useState<boolean>(false);
 
+    const removeParams = () => {
+        const params = new URLSearchParams(searchParams.toString());
+        params.delete("destination-ip");
 
+        router.replace(`${pathname}?${params.toString()}`);
+    }
 
     const {
         register,
@@ -80,23 +85,22 @@ const NewDataTable = ({ handleFetchData }: NewDataProps) => {
     });
 
     useEffect(() => {
-        const listenIpParam = searchParams.get("listen-ip");
+        const destinationIpParams = searchParams.get("destination-ip");
 
-        if (!listenIpParam) return;
+        if (!destinationIpParams) return;
 
-        if (listenIpParam && isValidIPv4(listenIpParam)) {
-            setValue("listenIp", listenIpParam); // isi form
+        if (destinationIpParams && isValidIPv4(destinationIpParams)) {
+            setValue("destIp", destinationIpParams); // isi form
             setIsOpen(true); // buka modal / section
         } else {
-            const params = new URLSearchParams(searchParams.toString());
-            params.delete("listen-ip");
-
-            router.replace(`${pathname}?${params.toString()}`);
+            removeParams();
         }
 
-    }, [searchParams,pathname,router,setValue]);
+    }, [searchParams, pathname, router, setValue]);
 
     const watchedValues = watch();
+
+
 
     const hasAnyValue = (): boolean => {
         return Object.values(watchedValues).some(
@@ -117,6 +121,7 @@ const NewDataTable = ({ handleFetchData }: NewDataProps) => {
         reset();
         setIsUnsavedDialogOpen(false);
         setIsOpen(false);
+        removeParams();
     };
 
 

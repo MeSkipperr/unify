@@ -10,8 +10,9 @@ func SelectUserByType(types []models.UserRole) ([]models.User, error) {
 
 	result := database.DB.
 		Where("role IN ?", types).
+		Where("is_active = ?", true).
 		Find(&users)
-
+		
 	if result.Error != nil {
 		return nil, result.Error
 	}

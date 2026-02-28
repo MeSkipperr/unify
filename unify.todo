@@ -75,3 +75,18 @@ UNIFY-BACKEND
 [ ] Reset Filter function to set default sort and filter
 
 [ ] UP down  Device Count
+
+
+[ ] Ip Public Expose
+[ ] Dynamic Route
+[ ] Adb Keys
+[ ] Services not auto start
+[ ] Db Not backup
+[ ] Auto Field Port forward
+[ ] Url notif & services
+
+
+[X] Notification  select is true
+[X] SSE Dahsboar & MTR
+[X] Json ADB 
+[ ] 

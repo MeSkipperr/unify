@@ -182,6 +182,8 @@ func GetDeviceSummaryByType(deviceType string) (DeviceSummary, error) {
 		return DeviceSummary{}, err
 	}
 
+	result.Type = models.DeviceType(deviceType)
+
 	return result, nil
 }
 

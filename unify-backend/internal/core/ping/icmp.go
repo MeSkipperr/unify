@@ -3,6 +3,8 @@ package ping
 import (
 	"net"
 	"os"
+	"os/exec"
+	"runtime"
 	"time"
 
 	"golang.org/x/net/icmp"
@@ -39,6 +41,14 @@ func Ping(p Params) Result {
 		Source: p.Source,
 		Times:  p.Times,
 		RTTs:   make([]time.Duration, 0),
+	}
+
+	switch runtime.GOOS {
+	case "linux":
+		exec.Command("ping", "-c", "1", p.Target)
+
+	case "windows":
+		exec.Command("ping", "-n", "1", p.Target)
 	}
 
 	ipAddr, err := net.ResolveIPAddr("ip4", p.Target)
