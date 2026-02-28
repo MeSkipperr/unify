@@ -151,7 +151,7 @@ const ActionsColumns = ({ row, handleFetchData }: ActionsProps) => {
                 </Sheet>
                 <ChangeData row={row} handleFetchData={handleFetchData} />
                 <DropdownMenuItem >
-                    <Link href={`/services/port-forward?listen-ip=${row.ipAddress}`} className='size-full'>
+                    <Link href={`/services/port-forward?destination-ip=${row.ipAddress}`} className='size-full'>
                         Port Forward
                     </Link>
                 </DropdownMenuItem>

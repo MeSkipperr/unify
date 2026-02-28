@@ -117,7 +117,11 @@ const ServicesTable = () => {
                                         <SelectContent>
                                             <SelectGroup>
                                                 <SelectItem value="RUNNING">Running</SelectItem>
-                                                <SelectItem value="STOPPED">Stopped</SelectItem>
+                                                {
+                                                    data.serviceName !== "monitoring-network" && (
+                                                        <SelectItem value="STOPPED">Stopped</SelectItem>
+                                                    )
+                                                }
                                             </SelectGroup>
                                         </SelectContent>
                                     </Select>

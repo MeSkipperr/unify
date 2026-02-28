@@ -167,7 +167,7 @@ const NewDataTable = ({ row, handleFetchData }: ChangeDataProps) => {
 
                 <SheetContent className="sm:max-w-md"
                     showCloseButton={false}
-                    onInteractOutside={(event) => handlerClose()}>
+                    onInteractOutside={() => handlerClose()}>
                     <SheetHeader>
                         <SheetTitle className="flex items-center gap-4">
                             Device Details

@@ -89,4 +89,7 @@ UNIFY-BACKEND
 [X] Notification  select is true
 [X] SSE Dahsboar & MTR
 [X] Json ADB 
-[ ] 
+[ ] Speedtest SSE
+
+
+[ ] Detail Portforward 

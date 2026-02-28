@@ -20,6 +20,7 @@ import {
 
 import { formatDateTime } from "@/utils/time"
 import { getSpeedTestResult } from "./speedtest.api"
+import { useSSE } from "@/hooks/useSSE"
 
 
 const chartConfig = {
@@ -56,12 +57,22 @@ type SpeedNetworkChartProps = {
     information: SpeedTestInformation
 }
 
+
+type SpeedtestSseEvent = {
+    type: "running-adb";
+    data: {
+        id: string;
+        result: string;
+    };
+};
+
 const SpeedNetworkChart = ({ information }: SpeedNetworkChartProps) => {
     const [data, setData] = React.useState<DataSpeedTestResultProps[]>([]);
     const [serverName, setServerName] = React.useState<string>("");
 
     React.useEffect(() => {
         const fetchSpeedTest = async () => {
+
             const query = {
                 internalIp: information.ipAddress,
                 serverId: information.serverId,
@@ -69,7 +80,7 @@ const SpeedNetworkChart = ({ information }: SpeedNetworkChartProps) => {
 
             try {
                 const result = await getSpeedTestResult(query)
-                const mappedData: DataSpeedTestResultProps[] = result.map((item : DataSpeedTestResultProps) => ({
+                const mappedData: DataSpeedTestResultProps[] = result.map((item: DataSpeedTestResultProps) => ({
                     testedAt: item.testedAt,
                     ping: item.pingMs,
                     upload: item.uploadMbps,

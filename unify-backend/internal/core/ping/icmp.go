@@ -1,10 +1,9 @@
 package ping
 
 import (
+	"fmt"
 	"net"
 	"os"
-	"os/exec"
-	"runtime"
 	"time"
 
 	"golang.org/x/net/icmp"
@@ -12,22 +11,21 @@ import (
 )
 
 type Params struct {
-	Target  string // destination IP / hostname
-	Source  string // optional source IP (linux)
-	Times   int    // number of echo requests
+	Target  string
+	Source  string
+	Times   int
 	Timeout time.Duration
 }
 
 type Result struct {
-	Target  string          `json:"target"`
-	Source  string          `json:"source,omitempty"`
-	Times   int             `json:"times"`
-	Replies int             `json:"replies"`
-	RTTs    []time.Duration `json:"rtts"`
-	Error   string          `json:"error,omitempty"`
+	Target  string
+	Source  string
+	Times   int
+	Replies int
+	RTTs    []time.Duration
+	Error   string
 }
 
-// Ping sends ICMP Echo Requests using raw packets
 func Ping(p Params) Result {
 	if p.Times <= 0 {
 		p.Times = 1
@@ -41,14 +39,6 @@ func Ping(p Params) Result {
 		Source: p.Source,
 		Times:  p.Times,
 		RTTs:   make([]time.Duration, 0),
-	}
-
-	switch runtime.GOOS {
-	case "linux":
-		exec.Command("ping", "-c", "1", p.Target)
-
-	case "windows":
-		exec.Command("ping", "-n", "1", p.Target)
 	}
 
 	ipAddr, err := net.ResolveIPAddr("ip4", p.Target)
@@ -65,43 +55,73 @@ func Ping(p Params) Result {
 	defer conn.Close()
 
 	id := os.Getpid() & 0xffff
+	buffer := make([]byte, 1500)
 
-	for i := 1; i <= p.Times; i++ {
+	for seq := 1; seq <= p.Times; seq++ {
+
 		msg := icmp.Message{
 			Type: ipv4.ICMPTypeEcho,
 			Code: 0,
 			Body: &icmp.Echo{
 				ID:   id,
-				Seq:  i,
+				Seq:  seq,
 				Data: []byte("PING"),
 			},
 		}
 
-		data, _ := msg.Marshal(nil)
-		start := time.Now().UTC()
-
-		_, err := conn.WriteTo(data, ipAddr)
+		data, err := msg.Marshal(nil)
 		if err != nil {
 			continue
 		}
 
-		_ = conn.SetReadDeadline(time.Now().UTC().Add(p.Timeout))
-		buf := make([]byte, 1500)
+		start := time.Now()
 
-		n, _, err := conn.ReadFrom(buf)
+		_, err = conn.WriteTo(data, ipAddr)
 		if err != nil {
 			continue
 		}
 
-		rm, err := icmp.ParseMessage(ipv4.ICMPTypeEchoReply.Protocol(), buf[:n])
-		if err != nil {
-			continue
+		_ = conn.SetReadDeadline(time.Now().Add(p.Timeout))
+
+		for {
+			n, peer, err := conn.ReadFrom(buffer)
+			if err != nil {
+				break // timeout
+			}
+
+			// pastikan dari target yang sama
+			if peer.String() != ipAddr.String() {
+				continue
+			}
+
+			rm, err := icmp.ParseMessage(1, buffer[:n])
+			if err != nil {
+				continue
+			}
+
+			if rm.Type != ipv4.ICMPTypeEchoReply {
+				continue
+			}
+
+			body, ok := rm.Body.(*icmp.Echo)
+			if !ok {
+				continue
+			}
+
+			// VALIDASI ID & SEQ
+			if body.ID == id && body.Seq == seq {
+				rtt := time.Since(start)
+				result.Replies++
+				result.RTTs = append(result.RTTs, rtt)
+
+				fmt.Printf("Reply from %s seq=%d time=%v\n",
+					ipAddr.String(), seq, rtt)
+
+				break
+			}
 		}
 
-		if rm.Type == ipv4.ICMPTypeEchoReply {
-			result.Replies++
-			result.RTTs = append(result.RTTs, time.Since(start))
-		}
+		time.Sleep(500 * time.Millisecond) // interval seperti ping
 	}
 
 	return result
