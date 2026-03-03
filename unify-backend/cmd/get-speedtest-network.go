@@ -28,7 +28,7 @@ type getSpeedtestNetworkConfig struct {
 type networkConfig struct {
 	Name      string `json:"name"`
 	Interface string `json:"interface"`
-	IPAddress string `json:"ip_address"`
+	IPAddress string `json:"ipAddress"`
 }
 
 func sendSSESpeedtest(data models.SpeedtestResult) {
