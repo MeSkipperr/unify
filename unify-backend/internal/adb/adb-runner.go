@@ -1,23 +1,34 @@
 package adb
 
 import (
+	"context"
 	"os/exec"
 	"runtime"
 	"strings"
+	"time"
 )
 
 
 
 func run(command string) (string, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+	defer cancel()
+
 	var cmd *exec.Cmd
 
 	if runtime.GOOS == "windows" {
-		cmd = exec.Command("cmd", "/C", command)
+		cmd = exec.CommandContext(ctx, "cmd", "/C", command)
 	} else {
-		cmd = exec.Command("sh", "-c", command)
+		cmd = exec.CommandContext(ctx, "sh", "-c", command)
 	}
 
 	out, err := cmd.CombinedOutput()
+
+	// jika timeout
+	if ctx.Err() == context.DeadlineExceeded {
+		return "adb command timeout", ctx.Err()
+	}
+
 	return string(out), err
 }
 

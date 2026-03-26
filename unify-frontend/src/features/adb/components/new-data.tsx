@@ -124,10 +124,12 @@ const NewDataTable = ({ handleFetchData }: NewDataProps) => {
         setIsOpen(false);
     };
 
+
     const handleDiscardChange = () => {
         reset();
         setIsUnsavedDialogOpen(false);
         setIsOpen(false);
+        router.replace(pathname)
     };
 
     const handleCloseResult = async () => {
@@ -161,7 +163,6 @@ const NewDataTable = ({ handleFetchData }: NewDataProps) => {
     });
 
     const onSubmit = async (data: UserFormValues) => {
-        console.log("running")
         try {
             setIsLoading(true);
             start();
@@ -182,10 +183,10 @@ const NewDataTable = ({ handleFetchData }: NewDataProps) => {
         const listenIpParam = searchParams.get("ip-address");
         const deviceName = searchParams.get("name");
 
-        const params = new URLSearchParams(searchParams.toString());
+        if (!listenIpParam || !deviceName) return;
 
-        // Jika salah satu kosong → hapus keduanya
-        if (!listenIpParam || !deviceName) {
+        if (!isValidIPv4(listenIpParam)) {
+            const params = new URLSearchParams(searchParams.toString());
             params.delete("ip-address");
             params.delete("name");
 
@@ -193,20 +194,11 @@ const NewDataTable = ({ handleFetchData }: NewDataProps) => {
             return;
         }
 
-        // Jika IP valid → isi form
-        if (isValidIPv4(listenIpParam)) {
-            setValue("ipAddress", listenIpParam);
-            setValue("name", deviceName);
-            setIsOpen(true);
-        } else {
-            // Jika IP tidak valid → hapus dari URL
-            params.delete("ip-address");
-            params.delete("name");
+        setValue("ipAddress", listenIpParam);
+        setValue("name", deviceName);
+        setIsOpen(true);
 
-            router.replace(`${pathname}?${params.toString()}`);
-        }
-
-    }, [searchParams, pathname, router, setValue]);
+    }, [searchParams]);
 
 
     return (

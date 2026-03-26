@@ -69,6 +69,7 @@ type SpeedtestSseEvent = {
 const SpeedNetworkChart = ({ information }: SpeedNetworkChartProps) => {
     const [data, setData] = React.useState<DataSpeedTestResultProps[]>([]);
     const [serverName, setServerName] = React.useState<string>("");
+    const [isp, setIsp] = React.useState<string>("");
 
     React.useEffect(() => {
         const fetchSpeedTest = async () => {
@@ -86,8 +87,9 @@ const SpeedNetworkChart = ({ information }: SpeedNetworkChartProps) => {
                     upload: item.uploadMbps,
                     download: item.downloadMbps,
                 }))
-                setServerName(result[0].erverName)
+                setServerName(result[0].serverName)
                 setData(mappedData)
+                setIsp(result[0].ispName)
 
             } catch (error) {
                 console.error(error)
@@ -111,6 +113,10 @@ const SpeedNetworkChart = ({ information }: SpeedNetworkChartProps) => {
                 </div>
 
                 <div className="flex flex-wrap  gap-4 text-xs text-muted-foreground">
+                    <div className="flex items-center gap-1">
+                        <span className="font-medium">ISP:</span>
+                        <span>{isp}</span>
+                    </div>
                     <div className="flex items-center gap-1">
                         <span className="font-medium">Source:</span>
                         <span>{information.ipAddress}</span>

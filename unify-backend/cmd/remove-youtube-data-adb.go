@@ -91,6 +91,7 @@ func RemoveDataYoutubeADB(manager *worker.Manager) (*worker.Worker, error) {
 					IPAddress:  dev.IPAddress,
 					Port:       adbConfig.ADBPort,
 					NameDevice: dev.Name,
+					TypeServices: ServiceRemoveDataYoutubeADB,
 				})
 			}
 
@@ -112,7 +113,6 @@ func RemoveDataYoutubeADB(manager *worker.Manager) (*worker.Worker, error) {
 					adbResult[i].FinishTime = time.Now().UTC()
 					adbResult[i].StartTime = startedAt
 					adbResult[i].Result = value
-					adbResult[i].TypeServices = ServiceRemoveDataYoutubeADB
 				}
 			}
 

@@ -104,20 +104,18 @@ func GetAdbResultsPaginated(
 	// =====================
 	if search != "" {
 		like := "%" + search + "%"
+
 		query = query.Where(`
-			CAST(status AS TEXT) ILIKE ? OR
-			ip_address ILIKE ? OR
-			CAST(port AS TEXT) ILIKE ? OR
-			name_device ILIKE ?
+			(
+				CAST(status AS TEXT) ILIKE ? OR
+				ip_address ILIKE ? OR
+				CAST(port AS TEXT) ILIKE ? OR
+				name_device ILIKE ?
+			)
 		`, like, like, like, like)
 	}
 
-	// =====================
-	// COUNT
-	// =====================
-	if err = query.Count(&total).Error; err != nil {
-		return
-	}
+
 
 	if date != "" {
 		loc, _ := time.LoadLocation(tz)
@@ -173,11 +171,18 @@ func GetAdbResultsPaginated(
 			db = query.Order(column + " " + dir)
 		}
 	}
+		// =====================
+	// COUNT
+	// =====================
+	if err = query.Count(&total).Error; err != nil {
+		return
+	}
+
 	// =====================
 	// FETCH DATA
 	// =====================
 	err = query.
-		Limit(pageSize).
+		Limit(pageSize).	
 		Offset(offset).
 		Find(&data).
 		Error
@@ -189,7 +194,6 @@ func GetAdbResultsPaginated(
 	for i := range data {
 		data[i].Index = offset + i + 1
 	}
-
 	totalPage = int(math.Ceil(float64(total) / float64(pageSize)))
 	return
 }

@@ -15,14 +15,32 @@ func AuthMiddleware(c *gin.Context) {
 		return
 	}
 
-	claims, err := utils.VerifyJWT(token, os.Getenv("JWT_SECRET"))
+	secret := os.Getenv("JWT_SECRET")
+
+	claims, err := utils.VerifyJWT(token, secret)
 	if err != nil || claims.Type != "access" {
 		c.JSON(401, gin.H{"error": "invalid token"})
 		c.Abort()
 		return
 	}
 
-	c.Set("user_id", claims.Sub)
-	c.Set("user_name", claims.Name)
+	newToken, _ := utils.GenerateAccessToken(
+		claims.Sub,
+		claims.Name,
+		secret,
+	)
+
+	if newToken != token {
+		c.SetCookie(
+			"token",
+			newToken,
+			int(utils.AccessTokenTTL.Seconds()),
+			"/",
+			"",
+			false,
+			true,
+		)
+	}
+
 	c.Next()
 }

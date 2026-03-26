@@ -3,7 +3,7 @@ import DataTable from "@/components/table";
 import { AdbResult } from "../types";
 import { columns } from "./columns";
 import { dataFilter, sortData } from "../filter-data";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { FilterConfig } from "@/components/filter/types";
 import { SortBy } from "@/components/sort/types";
 import { TableQuery } from "@/components/table/types";
@@ -41,7 +41,7 @@ const AdbTable = ({ serviceType, hasDefaultValue = false, addNewData = false }: 
 
     const [totalData, setTotalData] = useState<number>(1);
 
-    const handleFetchData = async (payload?: TableQuery) => {
+    const handleFetchData = useCallback(async (payload?: TableQuery) => {
         setIsLoading(false)
 
         const page = payload?.page ?? Number(searchParams.get("page")) ?? 1
@@ -95,7 +95,7 @@ const AdbTable = ({ serviceType, hasDefaultValue = false, addNewData = false }: 
         } finally {
             setIsLoading(false)
         }
-    }
+    }, [filter, sort, date, searchParams])
 
     useEffect(() => {
         if (!date) return
@@ -132,7 +132,6 @@ const AdbTable = ({ serviceType, hasDefaultValue = false, addNewData = false }: 
                         <NewDataTable handleFetchData={handleFetchData} />
                     }
                 </>
-
             }
         />
     );

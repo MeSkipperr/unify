@@ -1,7 +1,6 @@
 package services
 
 import (
-	"fmt"
 	"os"
 	"unify-backend/internal/database"
 	"unify-backend/models"
@@ -46,15 +45,6 @@ func LoginHandler(c *gin.Context) {
 		c.JSON(500, gin.H{"error": "failed to generate token"})
 		return
 	}
-
-	refreshToken, err := utils.GenerateRefreshToken(
-		user.ID.String(),
-		os.Getenv("JWT_SECRET"),
-	)
-	if err != nil {
-		c.JSON(500, gin.H{"error": "failed to generate refresh token"})
-		return
-	}
 	// Access Token
 	c.SetCookie(
 		"token",
@@ -66,72 +56,29 @@ func LoginHandler(c *gin.Context) {
 		true,
 	)
 
-	// Refresh Token
-	c.SetCookie(
-		"refresh_token",
-		refreshToken,
-		int(utils.RefreshTokenTTL.Seconds()),
-		"/",
-		"",
-		false,
-		true,
-	)
 
 	c.JSON(200, gin.H{"message": "login success"})
 }
 
 func Me(c *gin.Context) {
 	secret := os.Getenv("JWT_SECRET")
-	accessToken, err := c.Cookie("token")
-	if err == nil {
-		claims, err := utils.VerifyJWT(accessToken, secret)
-		if err == nil && claims.Type == "access" {
-			c.JSON(200, gin.H{
-				"user_id": claims.Sub,
-				"name":    claims.Name,
-			})
-			return
-		}
-	}
 
-	refreshToken, err := c.Cookie("refresh_token")
+	token, err := c.Cookie("token")
 	if err != nil {
 		c.JSON(401, gin.H{"message": "unauthorized"})
 		return
 	}
 
-	claims, err := utils.VerifyJWT(refreshToken, secret)
-	if err != nil || claims.Type != "refresh" {
-		c.JSON(401, gin.H{"message": "session expired"})
-		return
-	}
-
-	c.JSON(200, gin.H{"message": "access is available"})
-
-}
-
-func RefreshTokenHandler(c *gin.Context) {
-	token, err := c.Cookie("refresh_token")
+	claims, err := utils.VerifyJWT(token, secret)
 	if err != nil {
-		c.JSON(401, gin.H{"error": "refresh token missing"})
+		c.JSON(401, gin.H{"message": "invalid token"})
 		return
 	}
 
-	claims, err := utils.VerifyJWT(token, os.Getenv("JWT_SECRET"))
-	fmt.Println("claims,", claims)
-	if err != nil || claims.Type != "refresh" {
-		c.JSON(401, gin.H{"error": "invalid refresh token"})
-		return
-	}
-
-	newAccessToken, _ := utils.GenerateAccessToken(
-		claims.Sub,
-		claims.Name,
-		os.Getenv("JWT_SECRET"),
-	)
-
-	c.SetCookie("token", newAccessToken, int(utils.AccessTokenTTL.Seconds()), "/", "", false, true)
-	c.JSON(200, gin.H{"message": "token refreshed"})
+	c.JSON(200, gin.H{
+		"user_id": claims.Sub,
+		"name":    claims.Name,
+	})
 }
 
 func LogoutHandler(c *gin.Context) {

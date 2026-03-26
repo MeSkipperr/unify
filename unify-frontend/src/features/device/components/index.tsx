@@ -48,8 +48,6 @@ const DeviceTableData = (
             search
         }
 
-        console.log(dataPayload)
-
         filter.forEach((filter) => {
             const selectedValues = filter.options
                 .filter(opt => opt.isSelected)

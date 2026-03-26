@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"time"
 	"unify-backend/internal/core/arp"
-	"unify-backend/internal/core/port"
 	"unify-backend/internal/database"
 	"unify-backend/internal/http/sse"
 	"unify-backend/internal/mailer"
@@ -47,7 +46,6 @@ func checkDeviceConnectivity(dev models.Devices) ConnectivityResult {
 		ConnectPort: 0,
 	}
 
-	// STEP 1: Ping / ARP
 	arpRes := arp.Check(arp.Params{
 		IP:     dev.IPAddress,
 		Warmup: true,
@@ -60,30 +58,6 @@ func checkDeviceConnectivity(dev models.Devices) ConnectivityResult {
 		return result
 	}
 
-	// STEP 2: If cannot ping to device use testing port
-	ports := models.CommonPorts()
-
-	if typePorts := models.DevicePorts(dev.Type); len(typePorts) > 0 {
-		ports = append(ports, typePorts...)
-	}
-
-	for _, p := range ports {
-		portRes := port.Check(port.Params{
-			Target:   dev.IPAddress,
-			Port:     p,
-			Protocol: port.TCP,
-			Timeout:  2 * time.Second,
-		})
-
-		if portRes.Open {
-			result.MACAddress = dev.MacAddress
-			result.IsConnect = true
-			result.ConnectPort = p
-			return result
-		}
-	}
-
-	// STEP 3: All Method cannot connect to device
 	return result
 }
 

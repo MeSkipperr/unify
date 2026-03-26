@@ -79,7 +79,7 @@ export default function AppSidebar() {
 
                             <SidebarMenuItem className="pl-8">
                                 <SidebarMenuButton asChild>
-                                    <Link href="/services/adb/remove-youtube-data">
+                                    <Link href="/services/adb/remove-youtube-data-adb">
                                         Remove Youtube Data
                                     </Link>
                                 </SidebarMenuButton>

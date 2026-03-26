@@ -8,7 +8,6 @@ import (
 
 	"github.com/gin-gonic/gin"
 )
-
 func GetSpeedtestByInternalIPAndServer() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		internalIP := c.Query("internalIp")
@@ -31,11 +30,17 @@ func GetSpeedtestByInternalIPAndServer() gin.HandlerFunc {
 
 		var results []models.SpeedtestResult
 
-		err = database.DB.
+		subQuery := database.DB.
+			Model(&models.SpeedtestResult{}).
 			Where("internal_ip = ? AND server_id = ?", internalIP, serverID).
+			Order("tested_at DESC").
+			Limit(30)
+
+		err = database.DB.
+			Table("(?) as last_results", subQuery).
 			Order("tested_at ASC").
-			Limit(30).
 			Find(&results).Error
+
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{
 				"error": err.Error(),
