@@ -1,14 +1,14 @@
-
+import { Suspense } from "react"
 import AdbTable from "@/features/adb/components/table"
 
 const AdbPage = () => {
-
     return (
         <div className="h-[85dvh]">
-            <AdbTable serviceType="manual" addNewData />
+            <Suspense fallback={<div>Loading...</div>}>
+                <AdbTable serviceType="manual" addNewData />
+            </Suspense>
         </div>
-
-    );
+    )
 }
 
-export default AdbPage;
+export default AdbPage

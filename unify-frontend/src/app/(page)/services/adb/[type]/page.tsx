@@ -1,4 +1,5 @@
 import AdbTable from "@/features/adb/components/table"
+import { Suspense } from "react"
 
 export default async function DeviceType({
     params,
@@ -8,7 +9,9 @@ export default async function DeviceType({
     const { type } = await params
     return (
         <div className="h-[85dvh]">
-            <AdbTable serviceType={type} hasDefaultValue/>
+            <Suspense fallback={<div>Loading...</div>}>
+                <AdbTable serviceType={type} hasDefaultValue />
+            </Suspense>
         </div>
     )
 }
