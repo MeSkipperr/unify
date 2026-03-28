@@ -8,7 +8,7 @@ export const dataFilter: FilterConfig[] = [
         type: "select",
         isEnabled: true,
         options: [
-            { value: "remove-youtube-data", label: "Remove Youtube Data", isSelected: false },
+            { value: "remove-youtube-data-adb", label: "Remove Youtube Data", isSelected: false },
             { value: "get-uptime-adb", label: "Get Uptime", isSelected: false },
             { value: "manual", label: "Manual", isSelected: false },
         ],
