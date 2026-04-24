@@ -11,5 +11,23 @@ services:
       - "5432:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
+
+  frontend:
+    build:
+      context: ./unify-frontend
+      dockerfile: Dockerfile
+    container_name: unify-frontend
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    env_file:
+      - ./unify-frontend/.env
+    volumes:
+      - ./unify-frontend:/app
+      - /app/node_modules
+    depends_on:
+      - postgres
+    command: npm run dev
+
 volumes:
   pgdata:
