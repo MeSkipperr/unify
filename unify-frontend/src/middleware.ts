@@ -5,53 +5,53 @@ import { NextRequest, NextResponse } from "next/server"
 const PUBLIC_PATHS = ["/login", "/register"]
 
 export async function middleware(req: NextRequest) {
-    const pathname = req.nextUrl.pathname
+    // const pathname = req.nextUrl.pathname
 
-    if (PUBLIC_PATHS.includes(pathname)) {
-        return NextResponse.next()
-    }
+    // if (PUBLIC_PATHS.includes(pathname)) {
+    //     return NextResponse.next()
+    // }
 
-    const cookieStore = await cookies()
-    const cookieHeader = cookieStore
-        .getAll()
-        .map(c => `${c.name}=${c.value}`)
-        .join("; ")
+    // const cookieStore = await cookies()
+    // const cookieHeader = cookieStore
+    //     .getAll()
+    //     .map(c => `${c.name}=${c.value}`)
+    //     .join("; ")
 
-    const headersList = await headers() 
-    const host = headersList.get("host")
+    // const headersList = await headers() 
+    // const host = headersList.get("host")
 
-    const protocol = "http"
+    // const protocol = "http"
 
-    const baseUrl =
-        process.env.NEXT_PUBLIC_API_BASE_URL ||
-        `${protocol}://${host}`
+    // const baseUrl =
+    //     process.env.NEXT_PUBLIC_API_BASE_URL ||
+    //     `${protocol}://${host}`
 
-    const response = await fetch(
-        `${baseUrl}/auth/me`,
-        {
-            method: "POST",
-            headers: {
-                Cookie: cookieHeader,
-                "Content-Type": "application/json",
-            },
-            credentials: "include",
-            cache: "no-store",
-        }
-    )
+    // const response = await fetch(
+    //     `${baseUrl}/auth/me`,
+    //     {
+    //         method: "POST",
+    //         headers: {
+    //             Cookie: cookieHeader,
+    //             "Content-Type": "application/json",
+    //         },
+    //         credentials: "include",
+    //         cache: "no-store",
+    //     }
+    // )
 
-    const isLoggedIn = response.ok
+    // const isLoggedIn = response.ok
 
-    if (pathname === "/") {
-        if (isLoggedIn) {
-            return NextResponse.redirect(new URL("/dashboard", req.url))
-        } else {
-            return NextResponse.redirect(new URL("/login", req.url))
-        }
-    }
+    // if (pathname === "/") {
+    //     if (isLoggedIn) {
+    //         return NextResponse.redirect(new URL("/dashboard", req.url))
+    //     } else {
+    //         return NextResponse.redirect(new URL("/login", req.url))
+    //     }
+    // }
 
-    if (!isLoggedIn) {
-        return NextResponse.redirect(new URL("/login", req.url))
-    }
+    // if (!isLoggedIn) {
+    //     return NextResponse.redirect(new URL("/login", req.url))
+    // }
 
     return NextResponse.next()
 }
