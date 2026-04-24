@@ -11,6 +11,8 @@ services:
       - "5432:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
+    networks:
+      - unify_net
 
   frontend:
     build:
@@ -24,9 +26,11 @@ services:
       - ./unify-frontend/.env
     depends_on:
       - postgres
+    networks:
+      - unify_net
 
 networks:
-  mynet:
+  unify_net:
     driver: bridge
     ipam:
       config:
