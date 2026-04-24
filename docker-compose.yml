@@ -25,5 +25,12 @@ services:
     depends_on:
       - postgres
 
+networks:
+  mynet:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 10.250.0.0/24
+
 volumes:
   pgdata:
