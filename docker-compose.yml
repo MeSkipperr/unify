@@ -34,7 +34,7 @@ networks:
     driver: bridge
     ipam:
       config:
-        - subnet: 10.250.0.0/24
+        - subnet: 10.250.1.0/24
 
 volumes:
   pgdata:
