@@ -22,12 +22,8 @@ services:
       - "3000:3000"
     env_file:
       - ./unify-frontend/.env
-    volumes:
-      - ./unify-frontend:/app
-      - /app/node_modules
     depends_on:
       - postgres
-    command: npm run dev
 
 volumes:
   pgdata:
