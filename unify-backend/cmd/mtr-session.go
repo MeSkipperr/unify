@@ -48,7 +48,7 @@ func saveMtrResult(data mtrSessionParms) error {
 	mtrResult := models.MTRResult{
 		SessionID: session.ID.String(),
 
-		SourceIP:      out.HopResult[0].Host,
+		SourceIP:      session.SourceIP,
 		DestinationIP: session.DestinationIP,
 		Protocol:      session.Protocol,
 		Port:          session.Port,
