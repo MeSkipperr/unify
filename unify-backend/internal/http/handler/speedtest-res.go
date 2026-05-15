@@ -5,6 +5,7 @@ import (
 	"strconv"
 	"unify-backend/internal/database"
 	"unify-backend/models"
+	"slices"
 
 	"github.com/gin-gonic/gin"
 )
@@ -31,11 +32,13 @@ func GetSpeedtestByInternalIPAndServer() gin.HandlerFunc {
 
 		var results []models.SpeedtestResult
 
+
 		err = database.DB.
 			Where("internal_ip = ? AND server_id = ?", internalIP, serverID).
-			Order("tested_at ASC").
-			Limit(30).
+			Order("tested_at DESC").
+			Limit(30).               
 			Find(&results).Error
+
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{
 				"error": err.Error(),
@@ -49,6 +52,9 @@ func GetSpeedtestByInternalIPAndServer() gin.HandlerFunc {
 			})
 			return
 		}
+
+
+		slices.Reverse(results)
 
 		c.JSON(http.StatusOK, results)
 	}

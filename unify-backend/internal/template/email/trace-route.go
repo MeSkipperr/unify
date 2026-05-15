@@ -14,7 +14,6 @@ type TraceRouteEmailParms struct {
 
 func TraceRouteEmail(payload TraceRouteEmailParms, isReachable bool) string {
 	session := payload.Session
-	result := payload.Result.Report
 	currentTime := utils.GetCurrentTimeFormatted()
 
 	// default (DOWN)
@@ -57,7 +56,7 @@ Best regards,
 		intro,
 		currentTime,
 		session.ID,
-		result.HopResult[0].Host,
+		session.SourceIP,
 		session.DestinationIP,
 		session.Protocol,
 		portText,
