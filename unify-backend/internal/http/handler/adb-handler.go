@@ -112,12 +112,7 @@ func GetAdbResultsPaginated(
 		`, like, like, like, like)
 	}
 
-	// =====================
-	// COUNT
-	// =====================
-	if err = query.Count(&total).Error; err != nil {
-		return
-	}
+
 
 	if date != "" {
 		loc, _ := time.LoadLocation(tz)
@@ -134,6 +129,13 @@ func GetAdbResultsPaginated(
 		)
 	}
 	
+	// =====================
+	// COUNT
+	// =====================
+	if err = query.Count(&total).Error; err != nil {
+		return
+	}
+
 	// =====================
 	// SORT
 	// =====================
