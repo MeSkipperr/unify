@@ -1,0 +1,73 @@
+{
+    "adbPath": "adb",
+    "adbPort": 5555,
+    "verificationSteps": 2,
+    "adbListCommand": [
+        {
+            "key": "reboot-device",
+            "command": "{adbPath} -s {ip}:{port} reboot"
+        },
+        {
+            "key": "get-uptime",
+            "command": "{adbPath} -s {ip}:{port} shell cat /proc/uptime"
+        },
+        {
+            "key": "get-product-model",
+            "command": "{adbPath} -s {ip}:{port} shell getprop ro.product.model"
+        },
+        {
+            "key": "get-serial-number",
+            "command": "{adbPath} -s {ip}:{port} shell getprop ro.serialno"
+        },
+        {
+            "key": "get-device-id",
+            "command": "{adbPath} -s {ip}:{port} shell settings get secure android_id"
+        },
+        {
+            "key": "clear-app-data",
+            "command": "{adbPath} -s {ip}:{port} shell pm clear {packageName}"
+        },
+        {
+            "key": "enable-app",
+            "command": "{adbPath} -s {ip}:{port} shell pm enable {packageName}"
+        },
+        {
+            "key": "disable-app",
+            "command": "{adbPath} -s {ip}:{port} shell pm disable-user --user 0 {packageName}"
+        },
+        {
+            "key": "get-app-version",
+            "command": "{adbPath} -s {ip}:{port} shell dumpsys package {packageName} | findstr versionName"
+        },
+        {
+            "key": "is-app-installed",
+            "command": "{adbPath} -s {ip}:{port} shell pm list packages {packageName}"
+        },
+        {
+            "key": "send-key-event",
+            "command": "{adbPath} -s {ip}:{port} shell input keyevent {keycode}"
+        }
+    ],
+    "packages": {
+        "youtube": {
+            "packageName": "com.google.android.youtube.tv",
+            "displayName": "YouTube"
+        },
+        "netflix": {
+            "packageName": "com.netflix.ninja",
+            "displayName": "Netflix"
+        },
+        "primeVideo": {
+            "packageName": "com.amazon.amazonvideo.livingroom",
+            "displayName": "Prime Video"
+        },
+        "max": {
+            "packageName": "com.wbd.stream",
+            "displayName": "Max"
+        },
+        "hotstar": {
+            "packageName": "in.startv.hotstar.dplus.tv",
+            "displayName": "Disney+ Hotstar"
+        }
+    }
+}
